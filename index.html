@@ -1,0 +1,2283 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrandOS</title>
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   ДИЗАЙН-ТОКЕНЫ
+   Все цвета, отступы и размеры — переменные. Аналогия: это палитра
+   художника. Меняем краску в одном месте — меняется вся картина.
+   ===================================================================== */
+:root {
+  /* Цвета: тёмная тема с неоновыми акцентами (синий / фиолетовый) */
+  --bg: #0A0C1C;          /* фон приложения */
+  --s1: #13162E;          /* карточки, уровень 1 */
+  --s2: #1A1E3D;          /* поля ввода, наведение, уровень 2 */
+  --s3: #222749;          /* всплывающие окна, уровень 3 */
+  --line: #2A2F57;        /* линии и рамки */
+  --text: #ECEEFB;        /* основной текст */
+  --muted: #A3A9D1;       /* второстепенный текст (контраст > 7:1 на --s1) */
+  --faint: #8188B5;       /* подписи осей и мета (контраст > 4.5:1) */
+  --blue: #4C8DFF;        /* главный акцент: факт, кнопки, ссылки */
+  --violet: #9A6BFF;      /* второй акцент: прогноз, ИИ */
+  --green: #38D99A;       /* рост, «хорошо» */
+  --red: #FF5D7A;         /* риск, кассовый разрыв */
+  --amber: #FFB547;       /* предупреждение */
+  --wb: #CB11AB;          /* фирменный цвет Wildberries */
+  --ozon: #2F6BFF;        /* фирменный цвет Ozon */
+
+  /* Отступы — сетка 4/8 px (скил spacing) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
+
+  /* Скругления разные по иерархии: крупное — больше, мелкое — меньше */
+  --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+
+  /* Три брейкпоинта (скил viewports): узкий / средний / широкий */
+  --vp-narrow: 375px; --vp-medium: 768px; --vp-wide: 1280px;
+
+  --sidebar-w: 240px;
+  --hit: 44px;            /* минимальная зона касания (WCAG AA) */
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ===== Базовые стили ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  /* Цифры одинаковой ширины — колонки сумм не «пляшут» */
+  font-variant-numeric: tabular-nums;
+}
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: var(--r-sm); }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+svg.ico { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ===== Каркас приложения: меню слева + рабочая область =====
+   Почему Grid, а не Flexbox: каркасу нужны две колонки фиксированной роли
+   (меню и контент), Grid описывает это одной строкой. */
+.app { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; width: 100%; }
+
+/* ----- Меню ----- */
+.sidebar {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column; gap: var(--sp-4);
+  padding: var(--sp-6) var(--sp-3) var(--sp-4);
+  background: var(--s1); border-right: 1px solid var(--line);
+  overflow-y: auto;
+  z-index: 30;
+}
+.sidebar__brand { display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-2); }
+.sidebar__mark { width: 36px; height: 36px; border-radius: 10px; background: var(--violet); box-shadow: 0 0 20px rgba(154,107,255,.55); display: grid; place-items: center; font-weight: 700; color: #fff; }
+.sidebar__name { font-weight: 700; font-size: 18px; line-height: 1.2; }
+.sidebar__company { font-size: 13px; color: var(--muted); }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav__link {
+  display: flex; align-items: center; gap: var(--sp-3);
+  min-height: var(--hit); padding: 0 var(--sp-3);
+  border-radius: var(--r-md); color: var(--muted); font-size: 15px; font-weight: 500;
+  transition: background-color .15s, color .15s;
+}
+.nav__link:hover { background: var(--s2); color: var(--text); text-decoration: none; }
+/* Активный пункт — неоновая подсветка: единственное «свечение» в интерфейсе, кроме графика денег */
+.nav__link--active { background: rgba(76,141,255,.14); color: var(--text); box-shadow: inset 3px 0 0 var(--blue); }
+.nav__link--active .ico { color: var(--blue); }
+.nav__count { margin-left: auto; font-size: 12px; color: var(--text); background: var(--red); border-radius: 10px; padding: 0 6px; min-width: 20px; text-align: center; }
+.sidebar__bottom { margin-top: auto; display: flex; flex-direction: column; gap: var(--sp-2); }
+
+/* ----- Кнопки ----- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--hit); padding: 0 var(--sp-4);
+  border-radius: var(--r-md); border: 1px solid var(--line); background: var(--s2);
+  font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background-color .15s, border-color .15s;
+}
+.btn:hover { background: var(--s3); border-color: #3A4074; }
+.btn:disabled { opacity: .55; cursor: progress; }
+.btn--primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn--primary:hover { background: #3D7DF0; border-color: #3D7DF0; }
+.btn--ai { background: var(--violet); border-color: var(--violet); color: #fff; }
+.btn--ai:hover { background: #8A5CF0; border-color: #8A5CF0; }
+.btn--ghost { background: transparent; }
+.btn--danger { color: var(--red); background: transparent; }
+.btn--icon { width: var(--hit); padding: 0; }
+.btn--sm { min-height: 36px; padding: 0 var(--sp-3); font-size: 14px; }
+.btn--block { width: 100%; }
+
+/* ----- Рабочая область ----- */
+.workspace { min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap;
+  padding: var(--sp-4) var(--sp-6);
+  background: rgba(10,12,28,.96); border-bottom: 1px solid var(--line);
+}
+.topbar__burger { display: none; }
+.topbar__hello { min-width: 0; flex: none; }
+.topbar__hello h1 { font-size: 20px; font-weight: 600; line-height: 1.3; }
+.topbar__hello p { font-size: 13px; color: var(--muted); }
+/* Поиск растягивается в свободное место шапки, но не шире 400px */
+.search { position: relative; flex: 1 1 200px; max-width: 400px; margin-left: auto; }
+.search__input {
+  width: 100%; min-height: var(--hit); padding: 0 var(--sp-4) 0 40px;
+  border-radius: var(--r-md); border: 1px solid var(--line); background: var(--s2);
+}
+.search__input::placeholder { color: var(--faint); }
+.search .ico { position: absolute; left: 12px; top: 12px; color: var(--faint); }
+.search__results {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  background: var(--s3); border: 1px solid var(--line); border-radius: var(--r-md);
+  padding: var(--sp-2); display: none; max-height: 360px; overflow-y: auto;
+}
+.search__results--open { display: block; }
+.search__item { display: flex; justify-content: space-between; gap: var(--sp-3); min-height: var(--hit); align-items: center; padding: 0 var(--sp-3); border-radius: var(--r-sm); color: var(--text); }
+.search__item:hover, .search__item:focus-visible { background: var(--s2); text-decoration: none; }
+.search__kind { font-size: 12px; color: var(--faint); }
+.sources { display: flex; gap: var(--sp-2); align-items: center; }
+.source { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.source__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.source--on .source__dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.source--demo .source__dot { background: var(--amber); }
+.sync { display: flex; align-items: center; gap: var(--sp-2); font-size: 13px; color: var(--muted); }
+
+/* Основной контент ограничен по ширине (а не всё приложение) — скил viewports */
+.page { width: 100%; max-width: var(--vp-wide); margin-inline: auto; padding: var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-6); outline: none; }
+.page__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+.page__title { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.page__sub { color: var(--muted); margin-top: var(--sp-1); max-width: 70ch; }
+.page__actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+
+/* ----- Карточки ----- */
+.card { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-6); min-width: 0; }
+.card--link { display: block; color: inherit; transition: border-color .15s; }
+.card--link:hover { border-color: #3D4580; text-decoration: none; }
+.card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.card__title { font-size: 16px; font-weight: 600; }
+.card__more { font-size: 14px; white-space: nowrap; }
+.card__note { font-size: 13px; color: var(--muted); }
+
+/* Метки «демо» и «оценка» — честно показываем природу цифр */
+.tag { display: inline-block; font-size: 12px; font-weight: 500; line-height: 20px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tag--demo { color: var(--amber); border-color: rgba(255,181,71,.4); }
+.tag--est { color: var(--muted); }
+.tag--ai { color: #C6AEFF; border-color: rgba(154,107,255,.45); }
+.tag--red { color: var(--red); border-color: rgba(255,93,122,.45); }
+.tag--green { color: var(--green); border-color: rgba(56,217,154,.4); }
+.tag--blue { color: #9DBDFF; border-color: rgba(76,141,255,.45); }
+
+.banner { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid rgba(255,181,71,.35); background: rgba(255,181,71,.07); color: var(--text); font-size: 14px; }
+.banner .ico { color: var(--amber); margin-top: 2px; }
+
+/* ===== Главная ===== */
+.home { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--sp-6); align-items: start; }
+.home__main, .home__side { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+/* Контейнерный запрос: колонка KPI подстраивается под ширину СВОЕЙ колонки, а не окна.
+   Аналогия: шкаф подбирают под нишу, а не под размер всей квартиры. */
+.home__main { container-type: inline-size; container-name: main; }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
+@container main (min-width: 880px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.kpi { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4) var(--sp-4) var(--sp-3); }
+.kpi__label { font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; gap: var(--sp-2); align-items: center; }
+.kpi__value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; white-space: nowrap; }
+.kpi__foot { display: flex; flex-direction: column; gap: var(--sp-2); }
+.spark { width: 100%; height: 32px; }
+.delta { font-size: 13px; color: var(--muted); }
+.delta--up { color: var(--green); }
+.delta--down { color: var(--red); }
+
+.plan__row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; }
+.plan__fact { font-size: 24px; font-weight: 700; }
+.bar { position: relative; height: 10px; background: var(--s2); border-radius: 6px; overflow: visible; margin: var(--sp-3) 0; }
+.bar__fill { height: 100%; border-radius: 6px; background: var(--blue); }
+.bar__fill--violet { background: var(--violet); }
+.bar__fill--green { background: var(--green); }
+.bar__fill--red { background: var(--red); }
+.bar__fill--amber { background: var(--amber); }
+.bar__mark { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--text); border-radius: 1px; }
+.bar--thin { height: 6px; margin: var(--sp-2) 0 0; }
+
+/* Главный график — «герой» экрана */
+.cash { padding-bottom: var(--sp-4); }
+.cash__head { display: flex; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.cash__title { font-size: 20px; font-weight: 700; }
+.cash__status { font-size: 15px; margin-top: var(--sp-1); }
+.cash__status--gap { color: var(--red); font-weight: 600; }
+.cash__status--ok { color: var(--green); }
+.legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
+.legend__item { display: inline-flex; align-items: center; gap: 6px; }
+.legend__line { width: 18px; height: 0; border-top: 2px solid var(--blue); }
+.legend__line--dash { border-top: 2px dashed var(--violet); }
+.legend__area { width: 14px; height: 10px; background: rgba(154,107,255,.22); border-radius: 2px; }
+.legend__sq { width: 10px; height: 10px; border-radius: 2px; }
+
+.chart { position: relative; width: 100%; min-height: 200px; }
+.chart svg { display: block; width: 100%; }
+.chart__axis { fill: var(--faint); font-size: 12px; font-family: var(--font); }
+.chart__grid { stroke: var(--line); stroke-width: 1; }
+.chart__fact { fill: none; stroke: var(--blue); stroke-width: 2.5; filter: drop-shadow(0 0 6px rgba(76,141,255,.75)); }
+.chart__forecast { fill: none; stroke: var(--violet); stroke-width: 2.5; stroke-dasharray: 6 5; filter: drop-shadow(0 0 6px rgba(154,107,255,.7)); }
+.chart__band { fill: rgba(154,107,255,.16); }
+.chart__zero { stroke: rgba(255,93,122,.55); stroke-dasharray: 3 4; }
+.chart__gap { stroke: var(--red); stroke-width: 2; }
+.chart__gap-dot { fill: var(--red); filter: drop-shadow(0 0 6px var(--red)); }
+.chart__gap-label { fill: var(--red); font-size: 12px; font-weight: 600; font-family: var(--font); }
+.chart__today { stroke: var(--muted); stroke-dasharray: 2 4; }
+.chart__guide { stroke: var(--muted); stroke-width: 1; opacity: 0; }
+.chart__tip {
+  position: absolute; pointer-events: none; z-index: 5; min-width: 160px;
+  background: var(--s3); border: 1px solid var(--line); border-radius: var(--r-sm);
+  padding: var(--sp-2) var(--sp-3); font-size: 13px; opacity: 0; transition: opacity .1s;
+}
+.chart__tip b { display: block; margin-bottom: 2px; }
+/* Однократная «прорисовка» линии прогноза — единственная автоматическая анимация */
+.chart--intro .chart__fact, .chart--intro .chart__forecast-anim { animation: draw 1.1s ease-out both; }
+@keyframes draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) 0; border-top: 1px solid var(--line); font-size: 14px; }
+.row:first-child { border-top: 0; padding-top: 0; }
+.row:last-child { padding-bottom: 0; }
+.row__main { min-width: 0; flex: 1; }
+.row__title { font-weight: 500; overflow-wrap: anywhere; }
+.row__meta { font-size: 13px; color: var(--muted); }
+.row__val { text-align: right; white-space: nowrap; font-weight: 600; }
+a.row { color: inherit; }
+a.row:hover { text-decoration: none; background: var(--s2); }
+
+.channels { display: grid; gap: var(--sp-4); }
+.channel { display: grid; grid-template-columns: 120px minmax(0, 1fr) 72px 72px; gap: var(--sp-3); align-items: center; font-size: 14px; }
+.channel__head { color: var(--faint); font-size: 12px; }
+.channel .bar { margin: 0; }
+.num { text-align: right; white-space: nowrap; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--sp-4); }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat__val { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.stat__label { font-size: 13px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
+.stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.funnel__row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 90px; gap: var(--sp-3); align-items: center; font-size: 13px; padding: 6px 0; }
+.funnel__bar { height: 18px; border-radius: 4px; background: linear-gradient(90deg, var(--blue), #6E8BFF); min-width: 4px; }
+
+.insight { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) 0; border-top: 1px solid var(--line); color: inherit; }
+.insight:first-child { border-top: 0; padding-top: 0; }
+.insight:hover { text-decoration: none; }
+.insight:hover .insight__title { color: var(--blue); }
+.insight__title { font-weight: 600; font-size: 14px; }
+.insight__meta { display: flex; gap: var(--sp-2); align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.urg { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.urg::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.urg--critical { color: var(--red); }
+.urg--today { color: var(--amber); }
+.urg--week { color: #9DBDFF; }
+
+.quick { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.quick .btn { justify-content: flex-start; font-size: 14px; }
+
+/* ===== Таблицы ===== */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--s1); }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th, .table td { padding: var(--sp-3) var(--sp-4); text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.table th { font-weight: 500; color: var(--muted); font-size: 13px; background: var(--s1); position: sticky; top: 0; }
+.table tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover { background: var(--s2); }
+.table td.wrap { white-space: normal; min-width: 220px; }
+.table .num { text-align: right; }
+.th-sort { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit; display: inline-flex; gap: 4px; align-items: center; min-height: 32px; }
+.th-sort:hover { color: var(--text); }
+.good { color: var(--green); }
+.bad { color: var(--red); }
+.warn { color: var(--amber); }
+.muted { color: var(--muted); }
+
+/* ===== Фильтры и поля ===== */
+.toolbar { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; }
+.chip { min-height: 36px; padding: 0 var(--sp-3); border-radius: 18px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
+.chip:hover { color: var(--text); border-color: #3D4580; }
+.chip--on { background: rgba(76,141,255,.16); border-color: var(--blue); color: var(--text); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field__label { font-size: 14px; color: var(--muted); }
+.input, .select, .textarea { width: 100%; min-height: var(--hit); padding: 0 var(--sp-3); border-radius: var(--r-md); border: 1px solid var(--line); background: var(--s2); }
+.textarea { padding: var(--sp-3); min-height: 96px; resize: vertical; }
+.input--invalid { border-color: var(--red); }
+.field__error { font-size: 13px; color: var(--red); min-height: 0; }
+.select--inline { min-height: 36px; width: auto; padding: 0 var(--sp-2); font-size: 14px; }
+.check { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--hit); font-size: 14px; color: var(--muted); cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--blue); }
+
+/* ===== Канбан (задачи и CRM) ===== */
+.counters { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--sp-4); }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 1fr); gap: var(--sp-4); overflow-x: auto; padding-bottom: var(--sp-2); align-items: start; }
+.board__col { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); min-height: 200px; transition: border-color .15s, background-color .15s; }
+.board__col--over { border-color: var(--blue); background: #161B3A; }
+.board__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); padding: var(--sp-1) var(--sp-1) var(--sp-2); }
+.board__title { font-weight: 600; font-size: 15px; }
+.board__meta { font-size: 13px; color: var(--muted); text-align: right; }
+.board__empty { font-size: 13px; color: var(--faint); padding: var(--sp-4) var(--sp-2); text-align: center; border: 1px dashed var(--line); border-radius: var(--r-md); }
+.tcard { background: var(--s2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3); cursor: grab; display: flex; flex-direction: column; gap: var(--sp-2); text-align: left; width: 100%; }
+.tcard:hover { border-color: #3D4580; }
+.tcard--dragging { opacity: .5; }
+.tcard__title { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.tcard__meta { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.tcard__sum { font-weight: 600; font-size: 15px; }
+.prio { display: inline-flex; align-items: center; gap: 4px; }
+.prio::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+.prio--high { color: var(--red); }
+.prio--medium { color: var(--amber); }
+.prio--low { color: var(--faint); }
+.overdue { color: var(--red); }
+
+/* ===== Центр решений ===== */
+.tabs { display: flex; gap: var(--sp-2); flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tab { min-height: var(--hit); padding: 0 var(--sp-3); background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; font-size: 15px; font-weight: 500; margin-bottom: -1px; }
+.tab:hover { color: var(--text); }
+.tab--on { color: var(--text); border-bottom-color: var(--blue); }
+.tab__n { color: var(--faint); margin-left: 4px; }
+.decisions { display: grid; gap: var(--sp-4); }
+.decision { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: var(--sp-6); }
+.decision__top { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.decision__title { font-size: 19px; font-weight: 700; line-height: 1.3; margin-bottom: var(--sp-3); }
+.decision__text { color: var(--muted); font-size: 14px; max-width: 70ch; }
+.decision__text b { color: var(--text); font-weight: 500; }
+.decision__steps { margin: var(--sp-3) 0 0; padding-left: 20px; font-size: 14px; display: grid; gap: 4px; }
+.decision__side { display: flex; flex-direction: column; gap: var(--sp-3); border-left: 1px solid var(--line); padding-left: var(--sp-6); }
+.decision__effect { font-size: 24px; font-weight: 700; color: var(--green); line-height: 1.2; }
+.decision__actions { display: grid; gap: var(--sp-2); margin-top: auto; }
+.empty { text-align: center; padding: var(--sp-12) var(--sp-6); color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
+.empty__title { color: var(--text); font-size: 18px; font-weight: 600; }
+
+/* ===== Интеграции ===== */
+.integ { display: flex; flex-direction: column; gap: var(--sp-3); }
+.integ__top { display: flex; align-items: center; gap: var(--sp-3); }
+.logo { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; flex: none; }
+.integ__name { font-weight: 600; }
+.integ__desc { font-size: 14px; color: var(--muted); }
+.integ__status { font-size: 14px; }
+.integ__err { font-size: 14px; color: var(--red); background: rgba(255,93,122,.08); border-radius: var(--r-sm); padding: var(--sp-2) var(--sp-3); overflow-wrap: anywhere; }
+.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: var(--s2); padding: 1px 6px; border-radius: 4px; color: var(--text); }
+.group-title { font-size: 18px; font-weight: 600; margin-top: var(--sp-2); }
+
+/* ===== Модальное окно ===== */
+.modal { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: var(--sp-4); background: rgba(4,5,14,.72); }
+.modal--open { display: grid; }
+.modal__box { width: 100%; max-width: 520px; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--s3); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.modal__head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-4) 0 var(--sp-6); }
+.modal__title { font-size: 20px; font-weight: 700; }
+.modal__body { padding: var(--sp-4) var(--sp-6); display: grid; gap: var(--sp-4); }
+.modal__foot { display: flex; gap: var(--sp-2); justify-content: flex-end; padding: 0 var(--sp-6) var(--sp-6); flex-wrap: wrap; }
+.modal__foot .btn--danger { margin-right: auto; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+
+/* ===== ИИ-ассистент: выезжающая панель справа ===== */
+.chat {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 40; width: min(420px, 100%);
+  display: flex; flex-direction: column; background: var(--s3); border-left: 1px solid var(--line);
+  transform: translateX(100%); transition: transform .25s ease; visibility: hidden;
+}
+.chat--open { transform: none; visibility: visible; }
+.chat__head { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-6); border-bottom: 1px solid var(--line); }
+.chat__title { font-weight: 700; font-size: 18px; }
+.chat__sub { font-size: 13px; color: var(--muted); }
+.chat__log { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-3); }
+.msg { max-width: 88%; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg--user { align-self: flex-end; background: var(--blue); color: #fff; }
+.msg--bot { align-self: flex-start; background: var(--s2); border: 1px solid var(--line); }
+.msg--wait { color: var(--muted); }
+.chat__hints { display: flex; gap: var(--sp-2); flex-wrap: wrap; padding: 0 var(--sp-6) var(--sp-3); }
+.chat__form { display: flex; gap: var(--sp-2); padding: var(--sp-4) var(--sp-6) var(--sp-6); border-top: 1px solid var(--line); }
+.chat__form .input { flex: 1; }
+.scrim { position: fixed; inset: 0; z-index: 25; background: rgba(4,5,14,.6); display: none; }
+.scrim--on { display: block; }
+
+.toast { position: fixed; left: 50%; bottom: var(--sp-6); transform: translateX(-50%); z-index: 60; background: var(--s3); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); font-size: 14px; max-width: calc(100% - 32px); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.toast--on { opacity: 1; }
+
+/* =====================================================================
+   АДАПТИВНОСТЬ
+   Широкий (≥1280): главная в две колонки (контент + правая панель).
+   Средний (768–1279): правая панель уходит вниз, KPI по два в ряд.
+   Узкий (<768): меню прячется в бургер, всё в одну колонку.
+   ===================================================================== */
+@media (max-width: 1279.98px) {
+  .home { grid-template-columns: minmax(0, 1fr); }
+  .home__side { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .decision { grid-template-columns: minmax(0, 1fr); }
+  .decision__side { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: var(--sp-4); }
+  .decision__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767.98px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  /* Меню превращается в выезжающую шторку — те же пункты, доступ через бургер */
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 280px; transform: translateX(-100%); transition: transform .25s ease; visibility: hidden; }
+  .sidebar--open { transform: none; visibility: visible; }
+  .topbar { padding: var(--sp-3) var(--sp-4); gap: var(--sp-3); }
+  .topbar__burger { display: inline-flex; }
+  .topbar__hello h1 { font-size: 17px; }
+  .topbar__hello { flex: 1; }
+  .search { order: 5; flex-basis: 100%; max-width: none; margin-left: 0; }
+  .sources { display: none; }
+  .sync__text { display: none; }
+  .page { padding: var(--sp-4); gap: var(--sp-4); }
+  .page__title { font-size: 24px; }
+  .card { padding: var(--sp-4); }
+  .kpis, .stats--4 { grid-template-columns: minmax(0, 1fr); }
+  .kpi__value { font-size: 24px; }
+  .channel { grid-template-columns: 90px minmax(0, 1fr) 60px 56px; gap: var(--sp-2); font-size: 13px; }
+  .cards, .home__side { grid-template-columns: minmax(0, 1fr); }
+  /* Задачи на телефоне — колонки друг под другом, без горизонтальной прокрутки */
+  .board--stack { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; }
+  .board { grid-auto-columns: minmax(260px, 85%); }
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .decision__actions { grid-template-columns: minmax(0, 1fr); }
+  .modal { padding: 0; place-items: end stretch; }
+  .modal__box { max-width: none; max-height: 92vh; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .funnel__row { grid-template-columns: 90px minmax(0, 1fr) 76px; }
+}
+
+/* Уважаем системную настройку «уменьшить движение» */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Набор SVG-иконок (спрайт). Аналогия: альбом наклеек — рисуем один раз, используем через <use>. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 17v-6"/><path d="M11 17V6"/><path d="M16 17v-4"/><path d="M21 17V9"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M16 15h2"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11l2-8H6"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v1.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v8h14v-8"/></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path d="M3 10v4h4l7 5V5L7 10z"/><path d="M18 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-4-6.3"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h12v10H2z"/><path d="M14 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v4a6 6 0 0 1-12 0z"/><path d="M12 18v4"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- Меню слева -->
+  <aside class="sidebar" id="sidebar" aria-label="Главное меню">
+    <div class="sidebar__brand">
+      <div class="sidebar__mark" aria-hidden="true">B</div>
+      <div>
+        <div class="sidebar__name">BrandOS</div>
+        <div class="sidebar__company" id="companyName">Северный Кот</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar__bottom">
+      <button class="btn btn--ai btn--block" type="button" data-action="chat-open">
+        <svg class="ico"><use href="#i-spark"/></svg> ИИ-ассистент
+      </button>
+      <a class="nav__link" href="/logout" id="logoutLink" hidden><svg class="ico"><use href="#i-logout"/></svg> Выйти</a>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" data-action="scrim"></div>
+
+  <div class="workspace">
+    <header class="topbar">
+      <button class="btn btn--icon btn--ghost topbar__burger" type="button" data-action="menu" aria-label="Открыть меню" aria-controls="sidebar" aria-expanded="false">
+        <svg class="ico"><use href="#i-menu"/></svg>
+      </button>
+      <div class="topbar__hello">
+        <h1 id="greeting">Добрый день</h1>
+        <p id="today"></p>
+      </div>
+      <form class="search" role="search" id="searchForm" autocomplete="off">
+        <label class="visually-hidden" for="searchInput">Поиск по задачам, сделкам, документам и артикулам</label>
+        <svg class="ico"><use href="#i-search"/></svg>
+        <input class="search__input" id="searchInput" type="search" placeholder="Поиск: задачи, сделки, документы, артикулы">
+        <div class="search__results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
+      </form>
+      <div class="sources" id="sources" aria-label="Подключённые источники"></div>
+      <div class="sync">
+        <span class="sync__text" id="syncText">Демо-данные</span>
+        <button class="btn btn--icon" type="button" data-action="sync" aria-label="Обновить данные" title="Обновить данные">
+          <svg class="ico"><use href="#i-refresh"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="page" id="page" tabindex="-1"></main>
+  </div>
+</div>
+
+<!-- ИИ-ассистент: выезжающий чат справа -->
+<aside class="chat" id="chat" aria-label="ИИ-ассистент" aria-hidden="true">
+  <div class="chat__head">
+    <div>
+      <div class="chat__title">ИИ-ассистент</div>
+      <div class="chat__sub" id="chatSub">Отвечает по данным дашборда</div>
+    </div>
+    <button class="btn btn--icon btn--ghost" type="button" data-action="chat-close" aria-label="Закрыть ассистента"><svg class="ico"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="chat__log" id="chatLog" aria-live="polite"></div>
+  <div class="chat__hints" id="chatHints"></div>
+  <form class="chat__form" id="chatForm">
+    <label class="visually-hidden" for="chatInput">Вопрос ассистенту</label>
+    <input class="input" id="chatInput" placeholder="Спросите про выручку, рекламу, деньги…" autocomplete="off">
+    <button class="btn btn--icon btn--ai" type="submit" aria-label="Отправить"><svg class="ico"><use href="#i-send"/></svg></button>
+  </form>
+</aside>
+
+<div class="modal" id="modal"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="fileInput" multiple hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.xml,.txt,.csv,.doc,.docx,.xls,.xlsx,.zip">
+
+<script>
+'use strict';
+/* =====================================================================
+   BrandOS — логика интерфейса на чистом JavaScript (ES6+).
+
+   Как это устроено (аналогия с рестораном):
+   • DEMO — «витрина с муляжами»: все примеры данных в одном объекте.
+   • state — «кухня»: текущие данные, страница, фильтры.
+   • render() — «официант»: берёт данные из state и выкладывает HTML.
+   • Обработчики событий — «заказы гостей»: меняют state и зовут render().
+
+   Режимы:
+   • demo — файл открыт без сервера: всё на примерах, задачи/сделки в localStorage;
+   • live — открыт через сервер: реальные данные из API, хранение на сервере.
+   ===================================================================== */
+
+// ===== Мелкие помощники =====
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+// Экранирование текста — защита от подстановки чужого HTML (XSS)
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sum = (arr, f = (x) => x) => arr.reduce((a, x) => a + (Number(f(x)) || 0), 0);
+const nf = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+const rub = (n) => (n == null || Number.isNaN(n) ? '—' : `${nf.format(Math.round(n))} ₽`);
+// Короткий формат для крупных сумм: 1,24 млн ₽ / 456 тыс ₽
+function short(n) {
+  if (n == null) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e6) return `${(n / 1e6).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} млн ₽`;
+  if (a >= 1e4) return `${nf.format(Math.round(n / 1e3))} тыс ₽`;
+  return rub(n);
+}
+const shortNum = (n) => { const a = Math.abs(n); return a >= 1e6 ? `${(n / 1e6).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} млн` : a >= 1e3 ? `${Math.round(n / 1e3)} тыс` : String(Math.round(n)); };
+const pct = (n, d = 1) => (n == null ? '—' : `${Number(n).toLocaleString('ru-RU', { maximumFractionDigits: d })}%`);
+// Даты: локальная YYYY-MM-DD (для сроков задач важен день пользователя, а не UTC)
+const localIso = (d = new Date()) => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+const addDays = (n) => localIso(new Date(Date.now() + n * 86400000));
+const dmy = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('.') : '—');
+const dm = (iso) => (iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}` : '');
+const daysBetween = (iso) => Math.round((new Date(iso + 'T00:00:00') - new Date(localIso() + 'T00:00:00')) / 86400000);
+const icon = (id) => `<svg class="ico" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+const uidLocal = (p) => `${p}_${Math.random().toString(36).slice(2, 10)}`;
+const LS = {
+  get(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* приватный режим — не страшно */ } }
+};
+
+/* =====================================================================
+   ДЕМО-ДАННЫЕ — всё в одном объекте, чтобы потом подставить реальные.
+   Даты строятся от «сегодня», поэтому демо всегда выглядит свежим.
+   Пример бизнеса: мастерская «Северный Кот» — мебель для животных.
+   ===================================================================== */
+function buildDemo() {
+  // Детерминированный генератор случайных чисел: при каждой загрузке одинаковые «случайности»
+  let seed = 42;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+
+  const days30 = Array.from({ length: 30 }, (_, i) => addDays(i - 29));
+  const daily = days30.map((date, i) => ({
+    date,
+    wb: Math.round(84000 + 14000 * Math.sin(i / 3) + rnd() * 16000),
+    ozon: Math.round(47000 + 9000 * Math.cos(i / 4) + rnd() * 11000)
+  }));
+  const revenue = sum(daily, (d) => d.wb + d.ozon);
+  const revenuePrev = Math.round(revenue / 1.118);
+  const cogsPct = 0.38, payoutRatio = 0.68, fixed = 450000;
+  const ads = 183000;
+  const payout = revenue * payoutRatio;
+  const profit = payout - revenue * cogsPct - fixed - ads;
+  const profitPrev = revenuePrev * payoutRatio - revenuePrev * cogsPct - fixed - ads * 0.92;
+  const margin = (profit / revenue) * 100;
+  const marginPrev = (profitPrev / revenuePrev) * 100;
+
+  // Платежи по графику (как в settings.json, но относительно сегодняшнего дня)
+  const payments = [
+    { name: 'Аванс по зарплате', kind: 'salary', date: addDays(6), amount: 350000 },
+    { name: 'Страховые взносы', kind: 'tax', date: addDays(9), amount: 240000 },
+    { name: 'НДФЛ', kind: 'tax', date: addDays(9), amount: 120000 },
+    { name: 'УСН — авансовый платёж', kind: 'tax', date: addDays(9), amount: 210000 },
+    { name: 'Зарплата', kind: 'salary', date: addDays(24), amount: 820000 },
+    { name: 'Аренда мастерской', kind: 'other', date: addDays(27), amount: 180000 }
+  ].map((p) => ({ ...p, daysLeft: daysBetween(p.date) }));
+
+  // Прогноз денег: та же логика, что на сервере (приток − расход − платежи по графику)
+  const cashNow = 560000;
+  const inflow = 101000, outflow = 63000;
+  const cf = [];
+  let bal = cashNow - 14 * 9000;
+  for (let i = -13; i <= 0; i++) { bal += 9000 + (rnd() - 0.5) * 60000; cf.push({ date: addDays(i), fact: Math.round(i === 0 ? cashNow : bal), forecast: null, lo: null, hi: null }); }
+  cf[cf.length - 1].forecast = cashNow;
+  bal = cashNow;
+  let gap = null;
+  for (let i = 1; i <= 30; i++) {
+    const date = addDays(i);
+    const pays = payments.filter((p) => p.date === date);
+    bal += inflow - outflow - sum(pays, (p) => p.amount);
+    const spread = inflow * i * 0.12;
+    cf.push({ date, fact: null, forecast: Math.round(bal), lo: Math.round(bal - spread), hi: Math.round(bal + spread), pays: pays.map((p) => p.name) });
+    if (!gap && bal < 0) gap = { date, amount: Math.round(bal), reason: pays.map((p) => p.name).join(', ') };
+  }
+
+  // Артикулы: [артикул, название, площадка, цена, продано за 28 дн, остаток, в пути, реклама ₽, тренд 7 дн %, доля к выплате]
+  const P = [
+    ['SK-101', 'Когтеточка-столбик 70 см', 'wb', 1890, 310, 640, 0, 21000, 8.2, 0.68],
+    ['SK-102', 'Домик для кошки «Изба»', 'wb', 4990, 142, 26, 0, 38000, 12.5, 0.7],
+    ['SK-103', 'Лежанка круглая 50 см', 'ozon', 1590, 260, 410, 40, 15500, -3.1, 0.66],
+    ['SK-104', 'Комплекс «Сосна» 120 см', 'wb', 8900, 58, 23, 0, 41000, 4.0, 0.72],
+    ['SK-105', 'Гамак настенный', 'ozon', 2490, 120, 380, 0, 9800, 1.2, 0.68],
+    ['SK-106', 'Когтеточка угловая', 'wb', 990, 420, 900, 120, 12500, -6.4, 0.6],
+    ['SK-107', 'Лежанка на батарею', 'ozon', 1290, 230, 25, 0, 8700, 18.0, 0.66],
+    ['SK-108', 'Домик-куб с лежанкой', 'wb', 3590, 96, 210, 0, 17200, -1.5, 0.69],
+    ['SK-109', 'Ступеньки для собак', 'ozon', 3290, 64, 150, 0, 22800, -9.8, 0.67],
+    ['SK-110', 'Тоннель шуршащий', 'wb', 1190, 150, 520, 0, 39500, -12.0, 0.56]
+  ];
+  const articles = P.map(([article, name, mp, price, sold, stock, inWay, adSpend, trend7, pr]) => {
+    const rev = price * sold;
+    const prof = rev * pr - rev * cogsPct - adSpend;
+    const perDay = +(sold / 28).toFixed(2);
+    return { mp, article, name, revenue: rev, trend7, sold, stock, inWay, perDay, days: Math.floor(stock / perDay), adSpend, drr: +((adSpend / rev) * 100).toFixed(1), profit: Math.round(prof), margin: +((prof / rev) * 100).toFixed(1) };
+  });
+
+  // Рекламные кампании
+  const C = [
+    ['wb', '1001', 'Поиск — Домик «Изба»', 'идёт', 38000, 410000, 82, 9.1],
+    ['wb', '1002', 'Каталог — Тоннель шуршащий', 'идёт', 39500, 126000, 106, 33.0],
+    ['wb', '1003', 'Поиск — Комплекс «Сосна»', 'идёт', 41000, 380000, 43, 10.2],
+    ['ozon', '2001', 'Трафареты — Лежанки', 'идёт', 24200, 140000, 98, 18.4],
+    ['ozon', '2002', 'Поиск — Ступеньки для собак', 'идёт', 6800, 0, 0, null],
+    ['wb', '1004', 'Автокампания — Когтеточки', 'пауза', 33500, 365000, 290, 8.7]
+  ];
+  const campaigns = C.map(([mp, id, name, status, spend, ordersSum, orders, drr7]) => ({
+    mp, id, name, status, spend, orders, ordersSum,
+    drr: ordersSum ? +((spend / ordersSum) * 100).toFixed(1) : null,
+    spend7: Math.round(spend / 4.3), orders7: Math.round(orders / 4.3), drr7,
+    ctr: +(1.2 + rnd() * 3).toFixed(2), cpo: orders ? Math.round(spend / orders) : null
+  }));
+
+  const stockItems = articles.map((a) => ({ article: a.article, name: a.name, mp: a.mp, qty: a.stock, inWay: a.inWay, perDay: a.perDay, days: a.days })).sort((a, b) => a.days - b.days);
+
+  const STAGES = [
+    { id: 'new', name: 'Новая' }, { id: 'contact', name: 'Контакт' }, { id: 'offer', name: 'КП отправлено' },
+    { id: 'agree', name: 'Согласование' }, { id: 'won', name: 'Успешно', won: true }, { id: 'lost', name: 'Отказ', lost: true }
+  ];
+  const deals = [
+    ['Зоомагазин «Хвост» — опт когтеточек', 184000, 'new', 'Сайт', 'Марина', -2],
+    ['Ветклиника «Айболит» — лежанки', 96000, 'new', 'Telegram', 'Марина', -1],
+    ['Сеть «Четыре лапы» — пилотная партия', 620000, 'contact', 'Выставка', 'Алексей', -9],
+    ['Отель для животных «Мурлыка»', 142000, 'contact', 'Сайт', 'Марина', -6],
+    ['Груминг-салон «Пушистик»', 58000, 'offer', 'Рекомендация', 'Марина', -12],
+    ['Питомник мейн-кунов «Северная звезда»', 210000, 'offer', 'Instagram', 'Алексей', -15],
+    ['Маркетплейс «Яндекс Маркет» — FBS', 350000, 'agree', 'Входящий', 'Алексей', -20],
+    ['Кафе с котиками «Котокафе»', 76000, 'won', 'Сайт', 'Марина', -25],
+    ['Зоосалон «Лапки» — комплексы', 248000, 'won', 'Выставка', 'Марина', -32],
+    ['ИП Смирнова — лежанки под заказ', 34000, 'lost', 'Telegram', 'Марина', -18]
+  ].map(([c, s, st, src, mgr, d], i) => ({ id: `deal_demo${i}`, c, sum: s, st, src, mgr, d: addDays(d), closed: st === 'won' || st === 'lost' ? addDays(d + 6) : null }));
+
+  const documents = [
+    ['Счёт №1842 ООО «ЛесТорг».pdf', 'Почта', 'ООО «ЛесТорг»', 'Счёт', 286000, addDays(3), false, true, 'Финансы', 'Ждёт подписи', 'Оплата фанеры и бруса для партии комплексов «Сосна».'],
+    ['УПД №5521 от ООО «ТКань-Опт».pdf', 'ЭДО', 'ООО «ТКань-Опт»', 'УПД', 94500, addDays(2), true, false, 'Поставки', 'Ждёт подписи', 'Поставка мебельной ткани, нужно подписать в Диадоке.'],
+    ['Отчёт о реализации WB за неделю.pdf', 'WB', 'Wildberries', 'Отчёт', 612400, null, false, false, 'Маркетплейсы', 'Обработан', 'Еженедельный отчёт: к перечислению 612 400 ₽.'],
+    ['Акт оказания услуг Ozon сентябрь.pdf', 'Ozon', 'Ozon', 'Акт', 148900, addDays(5), true, false, 'Маркетплейсы', 'Ждёт подписи', 'Акт по услугам логистики и хранения.'],
+    ['Выписка Т-Банк.pdf', 'Банк', 'Т-Банк', 'Отчёт', null, null, false, false, 'Финансы', 'Обработан', 'Выписка по расчётному счёту за неделю.'],
+    ['фото_счёта_картон.jpg', 'Telegram', 'Олег', 'Счёт', 42300, addDays(1), false, true, 'Поставки', 'Новый', 'Счёт на гофрокартон для упаковки, прислан фото.'],
+    ['Договор поставки «Четыре лапы».docx', 'Почта', 'ООО «Четыре лапы»', 'Договор', 620000, addDays(7), true, false, 'CRM', 'Новый', 'Проект договора пилотной поставки.'],
+    ['Требование ФНС.pdf', 'ЭДО', 'ИФНС №7', 'Письмо', null, addDays(10), false, false, 'Налоги', 'Новый', 'Запрос пояснений по декларации УСН.']
+  ].map(([name, source, cp, type, amount, due, needSign, needPay, section, status, summary], i) => ({
+    id: `d_demo${i}`, name, source, from: cp, date: new Date(Date.now() - i * 26 * 3600000).toISOString(), status,
+    ai: { type, counterparty: cp, amount, due, needSign, needPay, section, summary, by: 'ai' }
+  }));
+
+  const tasks = [
+    ['Оплатить счёт ООО «ЛесТорг» на 286 000 ₽', 'todo', 'high', addDays(3), 'Ирина', true, 'd_demo0'],
+    ['Подписать УПД от ООО «ТКань-Опт»', 'todo', 'medium', addDays(2), 'Алексей', true, 'd_demo1'],
+    ['Подготовить фото для карточки «Изба»', 'doing', 'medium', addDays(-1), 'Дмитрий', false, null],
+    ['Сверить остатки на складе Коледино', 'doing', 'high', addDays(0), 'Олег', false, null],
+    ['Ответить на отзывы Ozon за неделю', 'todo', 'low', addDays(4), 'Марина', false, null],
+    ['Согласовать договор с «Четыре лапы»', 'todo', 'high', addDays(1), 'Алексей', true, 'd_demo6'],
+    ['Запустить акцию «Осенние лежанки»', 'done', 'medium', addDays(-3), 'Дмитрий', false, null],
+    ['Заказать гофрокартон', 'done', 'low', addDays(-5), 'Олег', false, null]
+  ].map(([title, status, priority, due, assignee, byAI, docId], i) => ({ id: `t_demo${i}`, title, status, priority, due, assignee, byAI, docId, createdAt: new Date(Date.now() - i * 86400000).toISOString() }));
+
+  // Решения — по тем же правилам, что и на сервере
+  const decisions = [];
+  if (gap) decisions.push({
+    id: 'dec_demo_gap', key: 'cash:gap', area: 'финансы', urgency: 'критично', status: 'new', source: 'rules',
+    title: `Закрыть кассовый разрыв ${dmy(gap.date)}`,
+    situation: `По прогнозу ${dmy(gap.date)} на счетах будет ${rub(gap.amount)}. Причина: ${gap.reason}. Сейчас на счетах ${rub(cashNow)}.`,
+    action: 'Перенести часть платежа поставщику и ускорить выплату с Wildberries.',
+    why: 'Кассовый разрыв — это просроченные налоги и зарплата.',
+    steps: ['Договориться с ООО «ЛесТорг» о переносе оплаты на 10 дней', 'Проверить ближайшую выплату WB и Ozon', 'Сократить закупку медленных артикулов SK-106', 'Пересчитать прогноз денег'],
+    effect: Math.abs(gap.amount), due: addDays(1), confidence: 75, metric: 'Минимальный остаток в прогнозе на 30 дней ≥ 0 ₽', taskIds: []
+  });
+  for (const a of articles.filter((x) => x.days < 14)) {
+    const need = Math.max(10, Math.ceil((a.perDay * 45 - a.stock - a.inWay) / 10) * 10);
+    decisions.push({
+      id: `dec_demo_${a.article}`, key: `stock:${a.mp}:${a.article}`, area: 'склад', status: 'new', source: 'rules',
+      urgency: a.days < 5 ? 'критично' : a.days < 10 ? 'сегодня' : 'на неделе',
+      title: `Дозаказать арт. ${a.article} — ${need} шт`,
+      situation: `${a.mp === 'wb' ? 'WB' : 'Ozon'}: остаток ${a.stock} шт, продаётся ${a.perDay} шт/день — хватит на ${a.days} дн. Порог — 14 дн.`,
+      action: `Заказать ${need} шт, чтобы закрыть ~45 дней продаж.`,
+      why: 'Если товар закончится, карточка теряет позиции в поиске.',
+      steps: [`Согласовать с поставщиком ${need} шт арт. ${a.article}`, 'Оплатить закупку', `Создать поставку на склад ${a.mp === 'wb' ? 'WB' : 'Ozon'}`],
+      effect: Math.round((a.profit / a.sold) * a.perDay * Math.max(0, 23 - a.days)), due: addDays(a.days < 5 ? 0 : 2), confidence: 80,
+      metric: `Остаток арт. ${a.article} в днях ≥ 14`, taskIds: []
+    });
+  }
+  for (const c of campaigns) {
+    if (c.drr != null && c.drr <= 15) continue;
+    const stop = !c.orders || c.drr > 30;
+    decisions.push({
+      id: `dec_demo_ads${c.id}`, key: `ads:${c.mp}:${c.id}`, area: 'реклама', status: 'new', source: 'rules',
+      urgency: stop ? 'сегодня' : 'на неделе',
+      title: stop ? `Остановить кампанию «${c.name}»` : `Снизить ставки в кампании «${c.name}»`,
+      situation: c.orders ? `ДРР ${c.drr}% при пороге 15%: расход ${rub(c.spend)}, заказы на ${rub(c.ordersSum)}. За неделю ДРР ${c.drr7}%.` : `Потрачено ${rub(c.spend)} за 30 дней, заказов нет.`,
+      action: stop ? 'Поставить кампанию на паузу и перераспределить бюджет.' : 'Снизить ставки на 20–30%.',
+      why: 'Расход сверх порога ДРР съедает прибыль.',
+      steps: stop ? ['Поставить кампанию на паузу в кабинете', 'Проверить карточку: цена, фото, отзывы', 'Через 7 дней сравнить заказы без рекламы'] : ['Снизить ставку на 20–30%', 'Отключить неэффективные фразы', 'Через 7 дней проверить ДРР'],
+      effect: Math.round(c.orders ? c.spend - c.ordersSum * 0.15 : c.spend), due: addDays(1), confidence: c.orders ? 70 : 85,
+      metric: `ДРР кампании ≤ 15%`, taskIds: []
+    });
+  }
+  for (const a of articles.filter((x) => x.profit < 0)) decisions.push({
+    id: `dec_demo_price${a.article}`, key: `price:${a.mp}:${a.article}`, area: 'цены', urgency: 'на неделе', status: 'new', source: 'rules',
+    title: `Вывести арт. ${a.article} из минуса`,
+    situation: `За 28 дней выручка ${rub(a.revenue)}, прибыль ${rub(a.profit)} (маржа ${a.margin}%). Реклама на артикул ${rub(a.adSpend)}, ДРР ${a.drr}%.`,
+    action: 'Сократить рекламу на артикул и поднять цену на 5–10%.',
+    why: 'Каждая продажа сейчас уменьшает прибыль.',
+    steps: ['Проверить себестоимость и комиссию', 'Поднять цену на 7%', 'Снизить ставки рекламы на артикул', 'Через 14 дней сравнить маржу'],
+    effect: Math.round((-a.profit / 28) * 30), due: addDays(3), confidence: 65, metric: `Маржа арт. ${a.article} > 0%`, taskIds: []
+  });
+  decisions.push({
+    id: 'dec_demo_old', key: 'ads:wb:0999', area: 'реклама', urgency: 'на неделе', status: 'rejected', source: 'rules', rejectReason: 'Кампания нужна для запуска новинки, держим месяц',
+    title: 'Остановить кампанию «Новинки — Гамаки»', situation: 'ДРР 24% при пороге 15%.', action: 'Поставить на паузу.', why: 'Расход выше порога.', steps: ['Пауза', 'Проверка через неделю'],
+    effect: 12000, due: addDays(-2), confidence: 60, metric: 'ДРР ≤ 15%', taskIds: []
+  });
+
+  return {
+    company: 'Северный Кот', owner: 'Алексей',
+    team: [{ name: 'Алексей', role: 'Владелец' }, { name: 'Марина', role: 'Менеджер' }, { name: 'Олег', role: 'Склад' }, { name: 'Ирина', role: 'Бухгалтер' }, { name: 'Дмитрий', role: 'Маркетолог' }],
+    sources: { wb: true, ozon: true, bank: true, crm: true },
+    lastSync: null, demo: [], estimated: [],
+    kpi: {
+      revenue: { value: revenue, prev: revenuePrev, delta: ((revenue - revenuePrev) / revenuePrev) * 100, spark: daily.slice(-14).map((d) => d.wb + d.ozon) },
+      profit: { value: Math.round(profit), prev: Math.round(profitPrev), delta: ((profit - profitPrev) / Math.abs(profitPrev)) * 100, spark: daily.slice(-14).map((d) => (d.wb + d.ozon) * 0.12 + rnd() * 9000) },
+      margin: { value: +margin.toFixed(1), prev: +marginPrev.toFixed(1), delta: +(margin - marginPrev).toFixed(1), unit: 'pp', spark: daily.slice(-14).map(() => margin - 2 + rnd() * 4) },
+      cash: { value: cashNow, prev: 812000, delta: ((cashNow - 812000) / 812000) * 100, spark: cf.slice(0, 14).map((d) => d.fact) }
+    },
+    plan: (() => { const now = new Date(); const day = now.getDate(); const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); const fact = sum(daily.slice(-day), (d) => d.wb + d.ozon); return { plan: 4000000, fact, day, days, forecast: Math.round((fact / day) * days), pct: +((fact / 4000000) * 100).toFixed(1) }; })(),
+    cashflow: { days: cf, gap, start: cashNow, end: Math.round(bal), inflow, outflow, minCash: 0 },
+    channels: [
+      { key: 'wb', name: 'Wildberries', revenue: sum(daily, (d) => d.wb), margin: 14.2, drr: 6.8 },
+      { key: 'ozon', name: 'Ozon', revenue: sum(daily, (d) => d.ozon), margin: 11.5, drr: 8.9 },
+      { key: 'site', name: 'Сайт', revenue: 312000, margin: 24.0, drr: 3.1 }
+    ],
+    payments,
+    receivables: { total: 1084000, items: [{ name: 'Wildberries', amount: 612400, note: 'выплата за текущую неделю' }, { name: 'Ozon', amount: 389600, note: 'за текущий расчётный период' }, { name: 'Сеть «Четыре лапы»', amount: 82000, note: 'постоплата по счёту №118' }] },
+    sales: {
+      today: daily[29].wb + daily[29].ozon, yesterday: daily[28].wb + daily[28].ozon,
+      week: sum(daily.slice(-7), (d) => d.wb + d.ozon), weekPrev: sum(daily.slice(-14, -7), (d) => d.wb + d.ozon),
+      orders7: 418, returns7: 17, returnsPct: 4.1, daily
+    },
+    supplies: [
+      { id: 'WB-77120', mp: 'wb', warehouse: 'Коледино', date: addDays(2), qty: 240, status: 'Собирается' },
+      { id: 'OZ-55018', mp: 'ozon', warehouse: 'Хоругвино', date: addDays(4), qty: 180, status: 'В пути' },
+      { id: 'WB-77098', mp: 'wb', warehouse: 'Казань', date: addDays(-1), qty: 120, status: 'Принята' },
+      { id: 'OZ-54990', mp: 'ozon', warehouse: 'Санкт-Петербург', date: addDays(9), qty: 300, status: 'Запланирована' },
+      { id: 'WB-77140', mp: 'wb', warehouse: 'Электросталь', date: addDays(12), qty: 160, status: 'Запланирована' }
+    ],
+    stock: { items: stockItems, total: sum(stockItems, (x) => x.qty), low: stockItems.filter((x) => x.days < 14).length, reorderDays: 14 },
+    ads: { spend: ads, ordersSum: sum(campaigns, (c) => c.ordersSum), drr: +((ads / revenue) * 100).toFixed(1), maxDrr: 15, campaigns },
+    traffic: { sources: [{ name: 'VK Реклама', visits: 4820, orders: 96 }, { name: 'Telegram-каналы', visits: 2310, orders: 71 }, { name: 'Блогеры', visits: 3650, orders: 58 }, { name: 'Яндекс Директ', visits: 1980, orders: 33 }] },
+    marketplaces: {
+      wb: { connected: true, revenue: sum(daily, (d) => d.wb), revenuePrev: Math.round(sum(daily, (d) => d.wb) / 1.12), payout: Math.round(sum(daily, (d) => d.wb) * 0.69), ads: 152000, drr: 6.8, stockQty: 2319, skus: 6, returns: 61 },
+      ozon: { connected: true, revenue: sum(daily, (d) => d.ozon), revenuePrev: Math.round(sum(daily, (d) => d.ozon) / 1.11), payout: Math.round(sum(daily, (d) => d.ozon) * 0.66), ads: 31000, drr: 8.9, stockQty: 965, skus: 4, returns: null,
+        finance: { accruals: Math.round(sum(daily, (d) => d.ozon) * 0.98), commission: -Math.round(sum(daily, (d) => d.ozon) * 0.19), logistics: -Math.round(sum(daily, (d) => d.ozon) * 0.1), refunds: -Math.round(sum(daily, (d) => d.ozon) * 0.02), services: -Math.round(sum(daily, (d) => d.ozon) * 0.01), compensation: 4200, others: 0 } }
+    },
+    finance: { revenue, mpCosts: Math.round(revenue - payout), payout: Math.round(payout), cogs: Math.round(revenue * cogsPct), fixed, ads, profit: Math.round(profit), margin: +margin.toFixed(1) },
+    bank: {
+      total: cashNow,
+      accounts: [{ bank: 'Т-Банк', name: 'Основной счёт …4417', balance: 412000 }, { bank: 'Точка', name: 'Точка …0921', balance: 148000 }],
+      ops: [
+        [0, 612400, 'ООО «Вайлдберриз»', 'Перечисление по отчёту о реализации'],
+        [-1, -96000, 'ООО «ТКань-Опт»', 'Оплата по счёту 5521 за ткань'],
+        [-2, -38000, 'ООО «Вайлдберриз»', 'Пополнение рекламного кабинета'],
+        [-3, 389600, 'ООО «Интернет Решения»', 'Выплата Ozon за период'],
+        [-4, -180000, 'ИП Кузнецов', 'Аренда мастерской за октябрь'],
+        [-5, -42300, 'ООО «Гофра»', 'Гофрокартон для упаковки'],
+        [-7, 82000, 'ООО «Хвост»', 'Оплата по счёту 117']
+      ].map(([d, amount, party, purpose]) => ({ date: addDays(d), amount, party, purpose, bank: 'Т-Банк' }))
+    },
+    settings: { maxDrr: 15, reorderDays: 14, revenuePlan: 4000000, cogsPercent: 38, fixedCostsMonthly: fixed, decisionHour: 8, syncMinutes: 30, taxRate: 6 },
+    crm: { provider: 'demo', stages: STAGES, deals },
+    tasks, documents, decisions,
+    analytics: { articles, campaigns, maxDrr: 15 },
+    integrations: null
+  };
+}
+
+const DEMO = buildDemo();
+
+// Карточки источников на странице «Интеграции»
+const INTEG_META = {
+  wb: { lg: 'WB', bg: 'var(--wb)', desc: 'Продажи, заказы, остатки и возвраты за 60 дней' },
+  ozon: { lg: 'Oz', bg: 'var(--ozon)', desc: 'Выручка по дням, комиссии, логистика, к выплате, остатки' },
+  wbads: { lg: 'WB', bg: '#8A1677', desc: 'Реклама WB: расход, показы, клики, заказы по кампаниям' },
+  ozonperf: { lg: 'OP', bg: '#1C47B8', desc: 'Реклама Ozon: расход, заказы, ДРР по кампаниям' },
+  amocrm: { lg: 'amo', bg: '#2F80ED', desc: 'Воронка и сделки, перенос этапа пишется обратно' },
+  bitrix: { lg: 'Б24', bg: '#1EAAE0', desc: 'Воронка и сделки через входящий вебхук' },
+  tbank: { lg: 'Т', bg: '#2B2B2B', desc: 'Остатки на счетах и выписка за 60 дней' },
+  tochka: { lg: 'То', bg: '#6B3FD4', desc: 'Остатки на счетах и выписка' },
+  imap: { lg: '@', bg: '#3A4074', desc: 'Вложения из писем попадают в «Документы»' },
+  telegram: { lg: 'TG', bg: '#229ED9', desc: 'Пересылайте боту файлы и фото документов' },
+  diadok: { lg: 'Д', bg: '#0F7B6C', desc: 'Входящие акты и УПД, ожидающие подписи (экспериментально)' },
+  wbdocs: { lg: 'WB', bg: '#5E0F51', desc: 'Отчёты и акты из кабинета Wildberries' },
+  claude: { lg: 'AI', bg: 'var(--violet)', desc: 'Распознавание документов, чат и Центр решений на ИИ' }
+};
+
+// Пункты меню: [ключ, название, иконка]. Каждый пункт ведёт на свою страницу.
+const MENU = [
+  ['home', 'Главная', 'home'], ['decisions', 'Центр решений', 'target'], ['analytics', 'Аналитика', 'chart'],
+  ['finance', 'Финансы', 'wallet'], ['sales', 'Продажи', 'cart'], ['marketplaces', 'Маркетплейсы', 'store'],
+  ['ads', 'Реклама', 'mega'], ['crm', 'CRM', 'users'], ['stock', 'Склад', 'box'], ['supplies', 'Поставки', 'truck'],
+  ['taxes', 'Налоги', 'receipt'], ['documents', 'Документы', 'file'], ['integrations', 'Интеграции', 'plug'], ['tasks', 'Задачи', 'tasks']
+];
+
+// ===== Состояние приложения =====
+const state = {
+  mode: 'demo',
+  page: 'home',
+  data: DEMO,
+  demoKeys: new Set(),
+  estKeys: new Set(),
+  tasks: [], crm: null, documents: [], decisions: [], decMeta: {}, analytics: DEMO.analytics, integrations: [],
+  ai: false,
+  chat: [],
+  filters: { docSource: 'Все', docStatus: 'Все', taskAssignee: 'Все', taskPriority: 'Все', taskAI: false, decTab: 'new', articleQuery: '' },
+  sort: { articles: { key: 'revenue', dir: -1 }, campaigns: { key: 'spend', dir: -1 } },
+  introDone: false
+};
+
+const isDemo = (key) => state.mode === 'demo' || state.demoKeys.has(key);
+// Метка у заголовка блока: «демо» или «оценка»
+function tagFor(key) {
+  if (state.mode === 'demo') return '';
+  if (state.demoKeys.has(key)) return '<span class="tag tag--demo" title="Источник не подключён — показан пример">демо</span>';
+  if (state.estKeys.has(key)) return '<span class="tag tag--est" title="Расчёт приблизительный">оценка</span>';
+  return '';
+}
+
+/* =====================================================================
+   ЗАГРУЗКА ДАННЫХ
+   ===================================================================== */
+async function api(method, url, body, headers) {
+  const isFile = body instanceof Blob;
+  const res = await fetch(url, {
+    method,
+    credentials: 'same-origin',
+    headers: isFile ? headers : body ? { 'Content-Type': 'application/json' } : undefined,
+    body: isFile ? body : body ? JSON.stringify(body) : undefined
+  });
+  if (res.status === 401) { location.href = '/login'; throw new Error('Нужно войти'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Ошибка сервера (${res.status})`);
+  return data;
+}
+
+// Подставляем живые блоки поверх демо: если блок в списке demo — остаётся пример
+function mergeLive(live) {
+  const data = structuredClone(DEMO);
+  for (const [k, v] of Object.entries(live)) {
+    if (k === 'kpi') {
+      for (const [kk, vv] of Object.entries(v)) if (!live.demo.includes(`kpi.${kk}`)) data.kpi[kk] = vv;
+    } else if (!live.demo.includes(k) && v != null) data[k] = v;
+  }
+  // Блоки «демо» берём из примера целиком
+  for (const k of live.demo) if (!k.includes('.') && DEMO[k] !== undefined) data[k] = structuredClone(DEMO[k]);
+  return data;
+}
+
+async function loadLive() {
+  const d = await api('GET', '/api/dashboard');
+  state.mode = 'live';
+  state.demoKeys = new Set(d.demo);
+  state.estKeys = new Set(d.estimated);
+  state.integrations = d.integrations;
+  state.ai = d.ai;
+  state.data = mergeLive(d);
+  const [tasks, crm, docs, dec, analytics] = await Promise.all([
+    api('GET', '/api/tasks'), api('GET', '/api/deals'), api('GET', '/api/documents'), api('GET', '/api/decisions'), api('GET', '/api/analytics')
+  ]);
+  state.tasks = tasks;
+  state.crm = crm;
+  state.documents = docs;
+  state.decisions = dec.decisions;
+  state.decMeta = dec;
+  state.analytics = analytics.live.mp ? analytics : { ...DEMO.analytics, demo: true };
+  if (analytics.live.mp && !analytics.live.ads) state.analytics.campaignsDemo = true;
+}
+
+function loadDemo() {
+  state.mode = 'demo';
+  state.data = DEMO;
+  state.tasks = LS.get('bos_tasks', DEMO.tasks);
+  state.crm = { ...DEMO.crm, deals: LS.get('bos_deals', DEMO.crm.deals) };
+  state.documents = LS.get('bos_docs', DEMO.documents);
+  state.decisions = LS.get('bos_decisions', DEMO.decisions);
+  state.decMeta = { source: 'rules', at: new Date().toISOString(), ai: false };
+  state.analytics = DEMO.analytics;
+}
+
+// Сохранение в демо-режиме — в localStorage браузера
+function persistDemo() {
+  if (state.mode !== 'demo') return;
+  LS.set('bos_tasks', state.tasks);
+  LS.set('bos_deals', state.crm.deals);
+  LS.set('bos_docs', state.documents);
+  LS.set('bos_decisions', state.decisions);
+}
+
+function upsert(arr, item) {
+  const i = arr.findIndex((x) => x.id === item.id);
+  if (i === -1) arr.unshift(item); else arr[i] = { ...arr[i], ...item };
+  return item;
+}
+
+/* =====================================================================
+   ОПЕРАЦИИ С ДАННЫМИ (одинаковый интерфейс для demo и live)
+   ===================================================================== */
+async function saveTask(t) {
+  if (state.mode === 'live') {
+    const saved = t.id ? await api('PUT', `/api/tasks/${t.id}`, t) : await api('POST', '/api/tasks', t);
+    upsert(state.tasks, saved);
+  } else {
+    if (!t.id) Object.assign(t, { id: uidLocal('t'), createdAt: new Date().toISOString() });
+    upsert(state.tasks, t);
+    persistDemo();
+  }
+}
+async function deleteTask(id) {
+  if (state.mode === 'live') await api('DELETE', `/api/tasks/${id}`);
+  state.tasks = state.tasks.filter((t) => t.id !== id);
+  persistDemo();
+}
+async function saveDeal(d) {
+  if (state.mode === 'live') {
+    const saved = d.id ? await api('PUT', `/api/deals/${d.id}`, d) : await api('POST', '/api/deals', d);
+    upsert(state.crm.deals, saved);
+  } else {
+    if (!d.id) Object.assign(d, { id: uidLocal('deal'), d: localIso() });
+    const stage = state.crm.stages.find((s) => s.id === d.st);
+    d.closed = stage?.won || stage?.lost ? d.closed || localIso() : null;
+    upsert(state.crm.deals, d);
+    persistDemo();
+  }
+}
+async function deleteDeal(id) {
+  if (state.mode === 'live') await api('DELETE', `/api/deals/${id}`);
+  state.crm.deals = state.crm.deals.filter((d) => d.id !== id);
+  persistDemo();
+}
+
+// Разбор документа по имени файла — для демо-режима (та же логика, что на сервере без ИИ)
+function classifyByName(name, source) {
+  const n = name.toLowerCase();
+  let type = 'Другое';
+  if (/сч[её]т-?фактур/.test(n)) type = 'Счёт-фактура';
+  else if (/сч[её]т|invoice/.test(n)) type = 'Счёт';
+  else if (/упд/.test(n)) type = 'УПД';
+  else if (/акт/.test(n)) type = 'Акт';
+  else if (/договор/.test(n)) type = 'Договор';
+  else if (/наклад/.test(n)) type = 'Накладная';
+  else if (/отч[её]т/.test(n)) type = 'Отчёт';
+  const needPay = type === 'Счёт';
+  const needSign = ['Акт', 'УПД', 'Договор'].includes(type);
+  return { type, counterparty: '', amount: null, due: addDays(3), needSign, needPay, section: needPay ? 'Финансы' : 'Прочее', summary: 'Разобрано по имени файла (демо-режим, ИИ не подключён).', by: 'rules' };
+}
+
+async function uploadFiles(files) {
+  for (const file of files) {
+    if (file.size > 25 * 1024 * 1024) { toast(`«${file.name}» больше 25 МБ — не загружен`); continue; }
+    if (state.mode === 'live') {
+      toast(`Загружаю «${file.name}»…`);
+      const doc = await api('POST', '/api/documents', file, { 'Content-Type': file.type || 'application/octet-stream', 'X-File-Name': encodeURIComponent(file.name) });
+      state.documents.unshift(doc);
+    } else {
+      const ai = classifyByName(file.name, 'Вручную');
+      const doc = { id: uidLocal('d'), name: file.name, source: 'Вручную', from: 'Загружено вручную', date: new Date().toISOString(), status: ai.needSign ? 'Ждёт подписи' : 'Обработан', ai };
+      state.documents.unshift(doc);
+      if (ai.needSign) await saveTask({ title: `Подписать ${ai.type.toLowerCase()} «${file.name}»`, status: 'todo', priority: 'medium', due: addDays(3), assignee: 'Алексей', byAI: false, docId: doc.id });
+      if (ai.needPay) await saveTask({ title: `Оплатить счёт «${file.name}»`, status: 'todo', priority: 'high', due: addDays(3), assignee: 'Ирина', byAI: false, docId: doc.id });
+      persistDemo();
+    }
+  }
+  if (state.mode === 'live') state.tasks = await api('GET', '/api/tasks');
+  toast('Документы загружены');
+  render();
+}
+
+async function setDocStatus(id, status) {
+  const d = state.documents.find((x) => x.id === id);
+  if (!d) return;
+  if (state.mode === 'live') await api('PUT', `/api/documents/${id}`, { status });
+  d.status = status;
+  persistDemo();
+}
+
+// Решения: принять / отложить / отклонить
+async function decide(id, action, reason) {
+  if (state.mode === 'live') {
+    await api('POST', `/api/decisions/${id}/${action}`, action === 'reject' ? { reason } : {});
+    const [dec, tasks] = await Promise.all([api('GET', '/api/decisions'), api('GET', '/api/tasks')]);
+    state.decisions = dec.decisions; state.decMeta = dec; state.tasks = tasks;
+  } else {
+    const d = state.decisions.find((x) => x.id === id);
+    if (action === 'accept') {
+      const role = { реклама: 'Дмитрий', склад: 'Олег', финансы: 'Ирина', документы: 'Ирина', CRM: 'Марина', продажи: 'Марина', цены: 'Алексей' }[d.area] || 'Алексей';
+      d.taskIds = [];
+      for (const step of d.steps) {
+        const t = { title: step, status: 'todo', priority: d.urgency === 'на неделе' ? 'medium' : 'high', due: d.due, assignee: role, byAI: d.source === 'ai', decisionId: d.id };
+        await saveTask(t);
+        d.taskIds.push(t.id);
+      }
+      d.status = 'inprogress';
+    }
+    if (action === 'postpone') { d.status = 'postponed'; d.postponedUntil = new Date(Date.now() + 3 * 86400000).toISOString(); }
+    if (action === 'reject') { d.status = 'rejected'; d.rejectReason = reason; }
+    persistDemo();
+  }
+  render();
+}
+
+// Прогресс решения считаем по его задачам
+function decisionProgress(d) {
+  const tasks = state.tasks.filter((t) => t.decisionId === d.id || (d.taskIds || []).includes(t.id));
+  if (!tasks.length) return { done: 0, total: 0, pct: 0 };
+  const done = tasks.filter((t) => t.status === 'done').length;
+  return { done, total: tasks.length, pct: Math.round((done / tasks.length) * 100) };
+}
+function decisionStatus(d) {
+  if (d.status === 'postponed' && new Date(d.postponedUntil) < new Date()) return 'new';
+  if (d.status === 'inprogress') { const p = decisionProgress(d); if (p.total && p.done === p.total) return 'done'; }
+  return d.status;
+}
+
+/* =====================================================================
+   ГРАФИКИ НА ЧИСТОМ SVG
+   Почему не библиотека: нам нужно 3 вида графиков, а SVG — это просто
+   «рисование координатами». Аналогия: миллиметровка, где мы сами
+   ставим точки и соединяем их линией.
+   ===================================================================== */
+function sparkline(values, color) {
+  const v = values.filter((x) => x != null);
+  if (v.length < 2) return '';
+  const w = 96, h = 32, min = Math.min(...v), max = Math.max(...v), span = max - min || 1;
+  const pts = v.map((y, i) => `${((i / (v.length - 1)) * w).toFixed(1)},${(h - 3 - ((y - min) / span) * (h - 6)).toFixed(1)}`);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+}
+
+// График денег: факт (сплошная), прогноз (пунктир), коридор, красная отметка разрыва
+function cashSvg(cf, W, H) {
+  const pad = { l: 64, r: 16, t: 24, b: 28 };
+  const days = cf.days;
+  const n = days.length;
+  const vals = days.flatMap((d) => [d.fact, d.forecast, d.lo, d.hi]).filter((v) => v != null);
+  let min = Math.min(0, ...vals), max = Math.max(...vals);
+  const span = max - min || 1;
+  min -= span * 0.06; max += span * 0.08;
+  const x = (i) => pad.l + (i * (W - pad.l - pad.r)) / (n - 1);
+  const y = (v) => pad.t + ((max - v) * (H - pad.t - pad.b)) / (max - min);
+  const line = (key) => days.map((d, i) => (d[key] == null ? null : `${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`)).filter(Boolean).join(' ');
+
+  let grid = '';
+  for (let t = 0; t <= 4; t++) {
+    const v = min + ((max - min) * t) / 4;
+    grid += `<line class="chart__grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}"/><text class="chart__axis" x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${shortNum(v)}</text>`;
+  }
+  const step = Math.ceil(n / (W < 520 ? 4 : 8));
+  let xl = '';
+  // Последнюю дату подписываем всегда, а обычную метку рядом с ней пропускаем, чтобы подписи не слипались
+  days.forEach((d, i) => { if ((i % step === 0 && n - 1 - i >= step / 2) || i === n - 1) xl += `<text class="chart__axis" x="${x(i)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${dm(d.date)}</text>`; });
+
+  // Коридор: верхняя граница слева направо, нижняя — справа налево
+  const todayIdx = days.findIndex((d) => d.forecast != null);
+  const band = days.map((d, i) => ({ d, i })).filter(({ d, i }) => i >= todayIdx && d.forecast != null);
+  const hiPts = band.map(({ d, i }) => `${x(i)},${y(d.hi ?? d.forecast)}`);
+  const loPts = band.slice().reverse().map(({ d, i }) => `${x(i)},${y(d.lo ?? d.forecast)}`);
+
+  let zero = '';
+  if (min < 0) zero = `<line class="chart__zero" x1="${pad.l}" x2="${W - pad.r}" y1="${y(0)}" y2="${y(0)}"/>`;
+
+  let gap = '';
+  if (cf.gap) {
+    const gi = days.findIndex((d) => d.date === cf.gap.date);
+    if (gi >= 0) {
+      const gx = x(gi);
+      const anchor = gx > W - 160 ? 'end' : 'start';
+      const tx = anchor === 'end' ? gx - 8 : gx + 8;
+      gap = `<line class="chart__gap" x1="${gx}" x2="${gx}" y1="${pad.t}" y2="${H - pad.b}"/>
+        <circle class="chart__gap-dot" cx="${gx}" cy="${y(days[gi].forecast)}" r="5"/>
+        <text class="chart__gap-label" x="${tx}" y="${pad.t - 8}" text-anchor="${anchor}">Кассовый разрыв ${dm(cf.gap.date)}</text>`;
+    }
+  }
+  const today = todayIdx >= 0 ? `<line class="chart__today" x1="${x(todayIdx)}" x2="${x(todayIdx)}" y1="${pad.t}" y2="${H - pad.b}"/><text class="chart__axis" x="${x(todayIdx) + 6}" y="${pad.t + 12}">сегодня</text>` : '';
+
+  return {
+    svg: `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Прогноз денег на 30 дней">
+      ${grid}${zero}
+      <polygon class="chart__band" points="${[...hiPts, ...loPts].join(' ')}"/>
+      ${today}
+      <polyline class="chart__fact" points="${line('fact')}"/>
+      <polyline class="chart__forecast" points="${line('forecast')}"/>
+      ${gap}${xl}
+      <line class="chart__guide" x1="0" x2="0" y1="${pad.t}" y2="${H - pad.b}"/>
+    </svg>`,
+    points: days.map((d, i) => ({
+      x: x(i),
+      html: `<b>${dmy(d.date)}</b>${d.fact != null ? `Факт: ${rub(d.fact)}` : `Прогноз: ${rub(d.forecast)}<br><span class="muted">Коридор: ${shortNum(d.lo)} … ${shortNum(d.hi)}</span>`}${d.pays?.length ? `<br><span class="warn">${esc(d.pays.join(', '))}</span>` : ''}`
+    }))
+  };
+}
+
+// Продажи по дням: столбики WB + Ozon друг на друге
+function salesSvg(daily, W, H) {
+  const pad = { l: 56, r: 8, t: 12, b: 28 };
+  const n = daily.length;
+  const max = Math.max(...daily.map((d) => d.wb + d.ozon), 1) * 1.1;
+  const bw = (W - pad.l - pad.r) / n;
+  const y = (v) => pad.t + ((max - v) * (H - pad.t - pad.b)) / max;
+  let g = '';
+  for (let t = 0; t <= 3; t++) { const v = (max * t) / 3; g += `<line class="chart__grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}"/><text class="chart__axis" x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${shortNum(v)}</text>`; }
+  const step = Math.ceil(n / (W < 520 ? 4 : 8));
+  daily.forEach((d, i) => {
+    const x0 = pad.l + i * bw + bw * 0.15, w = bw * 0.7;
+    g += `<rect x="${x0}" y="${y(d.wb)}" width="${w}" height="${y(0) - y(d.wb)}" fill="var(--violet)" rx="2"/>`;
+    g += `<rect x="${x0}" y="${y(d.wb + d.ozon)}" width="${w}" height="${y(d.wb) - y(d.wb + d.ozon)}" fill="var(--blue)" rx="2"/>`;
+    if (i % step === 0) g += `<text class="chart__axis" x="${x0 + w / 2}" y="${H - 8}" text-anchor="middle">${dm(d.date)}</text>`;
+  });
+  return {
+    svg: `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Продажи по дням">${g}<line class="chart__guide" x1="0" x2="0" y1="${pad.t}" y2="${H - pad.b}"/></svg>`,
+    points: daily.map((d, i) => ({ x: pad.l + i * bw + bw / 2, html: `<b>${dmy(d.date)}</b>WB: ${rub(d.wb)}<br>Ozon: ${rub(d.ozon)}<br>Всего: ${rub(d.wb + d.ozon)}` }))
+  };
+}
+
+// Рисуем графики под фактическую ширину контейнера (текст остаётся чётким на любом экране)
+function drawCharts() {
+  for (const el of $$('[data-chart]')) {
+    const W = Math.max(280, el.clientWidth);
+    const type = el.dataset.chart;
+    const H = type === 'cash' ? (W < 520 ? 220 : 280) : 220;
+    const res = type === 'cash' ? cashSvg(state.data.cashflow, W, H) : salesSvg(state.data.sales.daily, W, H);
+    el.innerHTML = res.svg + '<div class="chart__tip"></div>';
+    el._points = res.points;
+    // Одна «прорисовка» линий при первом показе главной
+    if (type === 'cash' && !state.introDone) {
+      el.classList.add('chart--intro');
+      for (const pl of el.querySelectorAll('.chart__fact')) { const len = pl.getTotalLength?.() || 1000; pl.style.strokeDasharray = len; pl.style.setProperty('--len', len); }
+      state.introDone = true;
+    }
+  }
+}
+
+// Подсказка при наведении/касании графика (делегирование — один обработчик на документ)
+document.addEventListener('pointermove', (e) => {
+  const el = e.target.closest?.('[data-chart]');
+  if (!el || !el._points) return;
+  const rect = el.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  let best = el._points[0];
+  for (const p of el._points) if (Math.abs(p.x - px) < Math.abs(best.x - px)) best = p;
+  const tip = el.querySelector('.chart__tip');
+  const guide = el.querySelector('.chart__guide');
+  tip.innerHTML = best.html;
+  tip.style.opacity = 1;
+  // Подсказка справа от точки, а у правого края — слева, чтобы не вылезала за график
+  let left = best.x + 12;
+  if (left + tip.offsetWidth > rect.width) left = best.x - tip.offsetWidth - 12;
+  tip.style.left = `${Math.max(0, left)}px`;
+  tip.style.top = '8px';
+  guide.setAttribute('x1', best.x); guide.setAttribute('x2', best.x); guide.style.opacity = 0.6;
+});
+document.addEventListener('pointerout', (e) => {
+  const el = e.target.closest?.('[data-chart]');
+  if (el && !el.contains(e.relatedTarget)) { const t = el.querySelector('.chart__tip'); if (t) t.style.opacity = 0; const g = el.querySelector('.chart__guide'); if (g) g.style.opacity = 0; }
+});
+
+/* =====================================================================
+   ОБЩИЕ КУСОЧКИ РАЗМЕТКИ
+   ===================================================================== */
+function delta(d, unit = '%', label = 'к прошлым 30 дням') {
+  if (d == null || !Number.isFinite(d)) return '<span class="delta">нет данных за прошлый период</span>';
+  const up = d >= 0;
+  const val = `${up ? '+' : '−'}${Math.abs(d).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}${unit === 'pp' ? ' п.п.' : '%'}`;
+  return `<span class="delta ${up ? 'delta--up' : 'delta--down'}">${val}</span> <span class="delta">${label}</span>`;
+}
+const urgClass = (u) => (u === 'критично' ? 'urg--critical' : u === 'сегодня' ? 'urg--today' : 'urg--week');
+const prioName = { high: 'Высокий', medium: 'Средний', low: 'Низкий' };
+const mpName = (mp) => (mp === 'wb' ? 'WB' : mp === 'ozon' ? 'Ozon' : mp);
+
+function pageHead(title, sub, actions = '', tag = '') {
+  return `<div class="page__head"><div><h2 class="page__title">${title} ${tag}</h2>${sub ? `<p class="page__sub">${sub}</p>` : ''}</div>${actions ? `<div class="page__actions">${actions}</div>` : ''}</div>`;
+}
+function demoBanner() {
+  if (state.mode !== 'demo') return '';
+  return `<div class="banner" role="note">${icon('alert')}<div><b>Демо-режим.</b> Файл открыт без сервера: все цифры — примеры. Задачи, сделки и документы сохраняются в этом браузере. Запустите сервер (<span class="code">npm start</span>) и добавьте ключи в <span class="code">.env</span>, чтобы увидеть реальные данные.</div></div>`;
+}
+function table(headers, rows, opts = {}) {
+  // headers: [{label, key?, num?}], rows: массив строк HTML <tr>
+  const th = headers.map((h) => {
+    const cls = h.num ? ' class="num"' : '';
+    if (!h.key || !opts.sortTable) return `<th${cls} scope="col">${h.label}</th>`;
+    const s = state.sort[opts.sortTable];
+    const active = s.key === h.key;
+    return `<th${cls} scope="col" aria-sort="${active ? (s.dir > 0 ? 'ascending' : 'descending') : 'none'}"><button class="th-sort" data-action="sort" data-table="${opts.sortTable}" data-key="${h.key}">${h.label}${active ? (s.dir > 0 ? ' ▲' : ' ▼') : ''}</button></th>`;
+  }).join('');
+  return `<div class="table-wrap"><table class="table"><thead><tr>${th}</tr></thead><tbody>${rows.join('') || `<tr><td colspan="${headers.length}" class="muted">Нет данных</td></tr>`}</tbody></table></div>`;
+}
+function sortRows(list, table) {
+  const { key, dir } = state.sort[table];
+  return [...list].sort((a, b) => {
+    const x = a[key], y = b[key];
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    return typeof x === 'string' ? x.localeCompare(y, 'ru') * dir : (x - y) * dir;
+  });
+}
+
+/* =====================================================================
+   СТРАНИЦЫ
+   ===================================================================== */
+function kpiCard(label, value, d, unit, spark, color, key, href) {
+  return `<a class="card card--link kpi" href="${href}">
+    <div class="kpi__label"><span>${label}</span>${tagFor(key)}</div>
+    <div class="kpi__value">${value}</div>
+    <div class="kpi__foot"><div>${delta(d, unit)}</div>${sparkline(spark || [], color)}</div>
+  </a>`;
+}
+
+function cashCard(tall = false) {
+  const cf = state.data.cashflow;
+  const minVal = Math.min(...cf.days.filter((d) => d.forecast != null).map((d) => d.forecast));
+  const status = cf.gap
+    ? `<p class="cash__status cash__status--gap">Кассовый разрыв ${dmy(cf.gap.date)}: ${rub(cf.gap.amount)}${cf.gap.reason ? ` (${esc(cf.gap.reason)})` : ''}</p>`
+    : `<p class="cash__status cash__status--ok">Разрывов не ожидается. Минимум в прогнозе — ${rub(minVal)}</p>`;
+  return `<section class="card cash" aria-labelledby="cash-title">
+    <div class="cash__head">
+      <div><h3 class="cash__title" id="cash-title">Прогноз денег на 30 дней ${tagFor('cashflow')}</h3>${status}</div>
+      <div class="legend">
+        <span class="legend__item"><span class="legend__line"></span>Факт</span>
+        <span class="legend__item"><span class="legend__line legend__line--dash"></span>Прогноз</span>
+        <span class="legend__item"><span class="legend__area"></span>Коридор</span>
+      </div>
+    </div>
+    <div class="chart" data-chart="cash"></div>
+    <p class="card__note">Сейчас ${rub(cf.start)}, через 30 дней ${rub(cf.end)}. Приток ~${short(cf.inflow)} в день, расход ~${short(cf.outflow)} в день плюс платежи по графику.</p>
+  </section>`;
+}
+
+function planCard() {
+  const p = state.data.plan;
+  const shouldPct = (p.day / p.days) * 100;
+  const fc = p.plan ? (p.forecast / p.plan) * 100 : 0;
+  return `<a class="card card--link" href="#/sales">
+    <div class="card__head"><h3 class="card__title">План месяца ${tagFor('plan')}</h3><span class="card__note">день ${p.day} из ${p.days}</span></div>
+    <div class="plan__row"><span class="plan__fact">${short(p.fact)}</span><span class="muted">из ${short(p.plan)} (${pct(p.pct)})</span></div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(p.pct)}" aria-label="Выполнение плана">
+      <div class="bar__fill ${p.pct >= shouldPct ? 'bar__fill--green' : ''}" style="width:${Math.min(100, p.pct)}%"></div>
+      <div class="bar__mark" style="left:${Math.min(100, shouldPct)}%" title="Где нужно быть сегодня"></div>
+    </div>
+    <p class="card__note">Прогноз на конец месяца: <b class="${fc >= 100 ? 'good' : 'bad'}">${short(p.forecast)}</b> (${pct(fc, 0)} плана). Вертикальная черта — где нужно быть сегодня.</p>
+  </a>`;
+}
+
+function channelsCard() {
+  const ch = state.data.channels;
+  const maxM = Math.max(30, ...ch.map((c) => c.margin));
+  return `<section class="card">
+    <div class="card__head"><h3 class="card__title">Маржинальность по каналам и ДРР ${tagFor('channels')}</h3><a class="card__more" href="#/marketplaces">Маркетплейсы</a></div>
+    <div class="channels">
+      <div class="channel channel__head"><span>Канал</span><span>Маржа</span><span class="num">Маржа</span><span class="num">ДРР</span></div>
+      ${ch.map((c) => `<div class="channel">
+        <span>${esc(c.name)}</span>
+        <div class="bar"><div class="bar__fill ${c.margin < 0 ? 'bar__fill--red' : 'bar__fill--violet'}" style="width:${Math.max(2, (Math.abs(c.margin) / maxM) * 100)}%"></div></div>
+        <span class="num ${c.margin < 0 ? 'bad' : ''}">${pct(c.margin)}</span>
+        <span class="num ${c.drr > state.data.settings.maxDrr ? 'bad' : ''}">${pct(c.drr)}</span>
+      </div>`).join('') || '<p class="card__note">Нет подключённых каналов продаж.</p>'}
+    </div>
+  </section>`;
+}
+
+function crmStats(crm = state.crm) {
+  const deals = crm?.deals || [];
+  const won = deals.filter((d) => crm.stages.find((s) => s.id === d.st)?.won);
+  const lost = deals.filter((d) => crm.stages.find((s) => s.id === d.st)?.lost);
+  const open = deals.filter((d) => !crm.stages.find((s) => s.id === d.st)?.won && !crm.stages.find((s) => s.id === d.st)?.lost);
+  return {
+    won, lost, open,
+    conversion: won.length + lost.length ? (won.length / (won.length + lost.length)) * 100 : null,
+    avgCheck: won.length ? sum(won, (d) => d.sum) / won.length : null,
+    openSum: sum(open, (d) => d.sum)
+  };
+}
+
+function homeCards() {
+  const D = state.data;
+  const pays = D.payments.slice(0, 4);
+  const s = D.sales;
+  const crm = state.mode === 'live' && !state.crm.deals.length ? DEMO.crm : state.crm;
+  const cs = crmStats(crm);
+  const maxStage = Math.max(1, ...crm.stages.map((st) => sum(crm.deals.filter((d) => d.st === st.id), (d) => d.sum)));
+  const funnelTag = state.mode === 'live' && !state.crm.deals.length ? '<span class="tag tag--demo">демо</span>' : '';
+  const maxVisits = Math.max(...D.traffic.sources.map((t) => t.visits));
+  return `<div class="cards">
+    <a class="card card--link" href="#/taxes">
+      <div class="card__head"><h3 class="card__title">Налоги и платежи</h3><span class="card__note">ближайшие</span></div>
+      <div class="rows">${pays.map((p) => `<div class="row"><div class="row__main"><div class="row__title">${esc(p.name)}</div><div class="row__meta ${p.daysLeft <= 3 ? 'warn' : ''}">${dmy(p.date)}, через ${p.daysLeft} дн.</div></div><div class="row__val">${short(p.amount)}</div></div>`).join('') || '<p class="card__note">Добавьте график платежей в settings.json</p>'}</div>
+    </a>
+    <a class="card card--link" href="#/finance">
+      <div class="card__head"><h3 class="card__title">Дебиторка ${tagFor('receivables')}</h3></div>
+      <div class="stat"><span class="stat__val">${short(D.receivables.total)}</span><span class="stat__label">нам должны перечислить</span></div>
+      <div class="rows" style="margin-top:12px">${D.receivables.items.map((r) => `<div class="row"><div class="row__main"><div class="row__title">${esc(r.name)}</div><div class="row__meta">${esc(r.note)}</div></div><div class="row__val">${short(r.amount)}</div></div>`).join('')}</div>
+    </a>
+    <a class="card card--link" href="#/sales">
+      <div class="card__head"><h3 class="card__title">Продажи ${tagFor('sales')}</h3></div>
+      <div class="stats">
+        <div class="stat"><span class="stat__val">${short(s.today)}</span><span class="stat__label">сегодня</span></div>
+        <div class="stat"><span class="stat__val">${short(s.week)}</span><span class="stat__label">за 7 дней</span></div>
+        <div class="stat"><span class="stat__val">${nf.format(s.orders7)}</span><span class="stat__label">заказов за 7 дней</span></div>
+        <div class="stat"><span class="stat__val ${s.returnsPct > 5 ? 'bad' : ''}">${pct(s.returnsPct)}</span><span class="stat__label">возвратов</span></div>
+      </div>
+    </a>
+    <a class="card card--link" href="#/supplies">
+      <div class="card__head"><h3 class="card__title">Поставки ${tagFor('supplies')}</h3></div>
+      <div class="rows">${D.supplies.filter((x) => x.status !== 'Принята').slice(0, 3).map((x) => `<div class="row"><div class="row__main"><div class="row__title">${mpName(x.mp)}, ${esc(x.warehouse)}</div><div class="row__meta">${dmy(x.date)}, ${esc(x.status.toLowerCase())}</div></div><div class="row__val">${nf.format(x.qty)} шт</div></div>`).join('')}</div>
+    </a>
+    <a class="card card--link" href="#/stock">
+      <div class="card__head"><h3 class="card__title">Склад ${tagFor('stock')}</h3><span class="card__note ${D.stock.low ? 'bad' : ''}">${D.stock.low} арт. на исходе</span></div>
+      <div class="rows">${D.stock.items.slice(0, 3).map((x) => `<div class="row"><div class="row__main"><div class="row__title">${esc(x.article)}</div><div class="row__meta">${esc(x.name)}</div></div><div class="row__val ${x.days != null && x.days < D.stock.reorderDays ? 'bad' : ''}">${x.days ?? '—'} дн.</div></div>`).join('')}</div>
+    </a>
+    <a class="card card--link" href="#/crm">
+      <div class="card__head"><h3 class="card__title">Воронка CRM ${funnelTag}</h3><span class="card__note">конверсия ${pct(cs.conversion, 0)}</span></div>
+      ${crm.stages.map((st) => { const list = crm.deals.filter((d) => d.st === st.id); const v = sum(list, (d) => d.sum); return `<div class="funnel__row"><span>${esc(st.name)}</span><div><div class="funnel__bar" style="width:${Math.max(2, (v / maxStage) * 100)}%"></div></div><span class="num">${list.length} / ${shortNum(v)}</span></div>`; }).join('')}
+    </a>
+    <a class="card card--link" href="#/marketplaces">
+      <div class="card__head"><h3 class="card__title">Внешний трафик ${tagFor('traffic')}</h3><span class="card__note">30 дней</span></div>
+      ${D.traffic.sources.map((t) => `<div class="funnel__row"><span>${esc(t.name)}</span><div><div class="funnel__bar" style="width:${(t.visits / maxVisits) * 100}%;background:var(--violet)"></div></div><span class="num">${nf.format(t.visits)} / ${t.orders} зак.</span></div>`).join('')}
+    </a>
+  </div>`;
+}
+
+function attentionItems() {
+  const items = [];
+  const today = localIso();
+  // В живом режиме не поднимаем тревогу по демо-блокам — это были бы выдуманные проблемы
+  const real = (key) => state.mode === 'demo' || !state.demoKeys.has(key);
+  const overdue = state.tasks.filter((t) => t.status !== 'done' && t.due && t.due < today);
+  if (overdue.length) items.push({ text: `Просрочено задач: ${overdue.length}`, meta: overdue[0].title, href: '#/tasks', cls: 'bad' });
+  const sign = state.documents.filter((d) => d.status === 'Ждёт подписи');
+  if (sign.length) items.push({ text: `Ждут подписи: ${sign.length} док.`, meta: sign[0].name, href: '#/documents', cls: 'warn' });
+  if (real('cashflow') && state.data.cashflow.gap) items.push({ text: `Кассовый разрыв ${dmy(state.data.cashflow.gap.date)}`, meta: rub(state.data.cashflow.gap.amount), href: '#/finance', cls: 'bad' });
+  if (real('stock') && state.data.stock.low) items.push({ text: `На исходе: ${state.data.stock.low} артикулов`, meta: `остатка меньше чем на ${state.data.stock.reorderDays} дней`, href: '#/stock', cls: 'warn' });
+  const hot = real('ads') ? state.data.ads.campaigns.filter((c) => c.drr == null ? c.spend > 1000 : c.drr > state.data.ads.maxDrr) : [];
+  if (hot.length) items.push({ text: `ДРР выше порога: ${hot.length} кампании`, meta: hot[0].name, href: '#/ads', cls: 'warn' });
+  const bills = state.documents.filter((d) => d.ai?.needPay && !['Оплачен', 'Архив'].includes(d.status));
+  if (bills.length) items.push({ text: `Счета к оплате: ${bills.length}`, meta: short(sum(bills, (d) => d.ai.amount || 0)), href: '#/documents', cls: '' });
+  return items;
+}
+
+function pageHome() {
+  const D = state.data;
+  const k = D.kpi;
+  const order = { 'критично': 0, 'сегодня': 1, 'на неделе': 2 };
+  const insights = state.decisions.filter((d) => decisionStatus(d) === 'new').sort((a, b) => order[a.urgency] - order[b.urgency] || b.effect - a.effect).slice(0, 4);
+  const attention = attentionItems();
+  const docs = state.documents.slice(0, 4);
+  return `${demoBanner()}
+  <div class="home">
+    <div class="home__main">
+      <section class="kpis" aria-label="Ключевые показатели за 30 дней">
+        ${kpiCard('Выручка, 30 дней', short(k.revenue.value), k.revenue.delta, '%', k.revenue.spark, 'var(--blue)', 'kpi.revenue', '#/sales')}
+        ${kpiCard('Чистая прибыль', short(k.profit.value), k.profit.delta, '%', k.profit.spark, 'var(--green)', 'kpi.profit', '#/finance')}
+        ${kpiCard('Маржа', pct(k.margin.value), k.margin.delta, 'pp', k.margin.spark, 'var(--violet)', 'kpi.margin', '#/analytics')}
+        ${kpiCard('Деньги на счетах', short(k.cash.value), k.cash.delta, '%', k.cash.spark, 'var(--blue)', 'kpi.cash', '#/finance')}
+      </section>
+      ${cashCard()}
+      ${planCard()}
+      ${channelsCard()}
+      ${homeCards()}
+    </div>
+    <aside class="home__side" aria-label="Подсказки и действия">
+      <section class="card">
+        <div class="card__head"><h3 class="card__title">ИИ-инсайты</h3><a class="card__more" href="#/decisions">Все решения</a></div>
+        ${insights.map((d) => `<a class="insight" href="#/decisions"><span class="insight__title">${esc(d.title)}</span><span class="insight__meta"><span class="urg ${urgClass(d.urgency)}">${d.urgency}</span>${d.effect ? `<span>эффект ${short(d.effect)}/мес</span>` : ''}</span></a>`).join('') || '<p class="card__note">Новых решений нет. Откройте Центр решений и нажмите «Пересчитать сейчас».</p>'}
+      </section>
+      <section class="card">
+        <div class="card__head"><h3 class="card__title">Требуют внимания</h3></div>
+        <div class="rows">${attention.map((a) => `<a class="row" href="${a.href}"><div class="row__main"><div class="row__title ${a.cls}">${esc(a.text)}</div><div class="row__meta">${esc(a.meta)}</div></div></a>`).join('') || '<p class="card__note">Всё под контролем.</p>'}</div>
+      </section>
+      <section class="card">
+        <div class="card__head"><h3 class="card__title">Быстрые действия</h3></div>
+        <div class="quick">
+          <button class="btn" type="button" data-action="task-new">${icon('plus')} Задача</button>
+          <button class="btn" type="button" data-action="doc-upload">${icon('upload')} Документ</button>
+          <button class="btn" type="button" data-action="deal-new">${icon('users')} Сделка</button>
+          <button class="btn" type="button" data-action="dec-recompute">${icon('target')} Решения</button>
+          <button class="btn btn--ai" type="button" data-action="chat-open" style="grid-column:1/-1">${icon('spark')} Спросить ИИ</button>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card__head"><h3 class="card__title">Последние документы</h3><a class="card__more" href="#/documents">Все</a></div>
+        <div class="rows">${docs.map((d) => `<a class="row" href="#/documents"><div class="row__main"><div class="row__title">${esc(d.name)}</div><div class="row__meta">${esc(d.source)}, ${esc(d.status)}</div></div>${d.ai?.amount ? `<div class="row__val">${short(d.ai.amount)}</div>` : ''}</a>`).join('') || '<p class="card__note">Документов пока нет. Загрузите файл или подключите почту.</p>'}</div>
+      </section>
+    </aside>
+  </div>`;
+}
+
+// ----- Центр решений -----
+function pageDecisions() {
+  const tabs = [['new', 'Новые'], ['inprogress', 'В работе'], ['postponed', 'Отложены'], ['done', 'Выполнены'], ['rejected', 'Отклонены']];
+  const counts = Object.fromEntries(tabs.map(([k]) => [k, state.decisions.filter((d) => decisionStatus(d) === k).length]));
+  const tab = state.filters.decTab;
+  const order = { 'критично': 0, 'сегодня': 1, 'на неделе': 2 };
+  const list = state.decisions.filter((d) => decisionStatus(d) === tab).sort((a, b) => order[a.urgency] - order[b.urgency] || b.effect - a.effect);
+  const m = state.decMeta;
+  const sub = `${m.at ? `Пересчитано ${new Date(m.at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. ` : 'Ещё не пересчитывалось. '}` +
+    `${m.source === 'ai' ? 'Решения подготовил ИИ.' : 'Работают встроенные правила: дозаказ, ДРР выше порога, артикулы в минус, кассовый разрыв, план, счета.'} Утренний разбор — в ${state.data.settings.decisionHour}:00.`;
+  return `${demoBanner()}
+  ${pageHead('Центр решений', sub, `<button class="btn btn--primary" type="button" data-action="dec-recompute">${icon('refresh')} Пересчитать сейчас</button>`)}
+  ${m.error ? `<div class="banner">${icon('alert')}<div>ИИ не ответил, поэтому решения собраны по правилам. Причина: ${esc(m.error)}</div></div>` : ''}
+  <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'tab--on' : ''}" role="tab" aria-selected="${tab === k}" data-action="dec-tab" data-tab="${k}">${l}<span class="tab__n">${counts[k]}</span></button>`).join('')}</div>
+  <div class="decisions">
+    ${list.map(decisionCard).join('') || `<div class="card empty"><p class="empty__title">${tab === 'new' ? 'Новых решений нет' : 'Здесь пусто'}</p><p>${tab === 'new' ? 'Нажмите «Пересчитать сейчас», чтобы собрать свежую картину.' : 'Решения появятся здесь после действий на вкладке «Новые».'}</p></div>`}
+  </div>`;
+}
+
+function decisionCard(d) {
+  const st = decisionStatus(d);
+  const prog = decisionProgress(d);
+  const actions = st === 'new' || st === 'postponed'
+    ? `<button class="btn btn--primary" type="button" data-action="dec-accept" data-id="${d.id}">Принять</button>
+       ${st === 'new' ? `<button class="btn" type="button" data-action="dec-postpone" data-id="${d.id}">Отложить на 3 дня</button>` : ''}
+       <button class="btn btn--ghost" type="button" data-action="dec-reject" data-id="${d.id}">Отклонить</button>
+       <button class="btn btn--ghost" type="button" data-action="dec-discuss" data-id="${d.id}">${icon('spark')} Обсудить с ИИ</button>`
+    : `<button class="btn btn--ghost" type="button" data-action="dec-discuss" data-id="${d.id}">${icon('spark')} Обсудить с ИИ</button>${st === 'inprogress' || st === 'done' ? '<a class="btn btn--ghost" href="#/tasks">Открыть задачи</a>' : ''}`;
+  return `<article class="card decision">
+    <div>
+      <div class="decision__top">
+        <span class="urg ${urgClass(d.urgency)}">${esc(d.urgency)}</span>
+        <span class="tag">${esc(d.area)}</span>
+        ${d.source === 'ai' ? '<span class="tag tag--ai">ИИ</span>' : '<span class="tag">правило</span>'}
+      </div>
+      <h3 class="decision__title">${esc(d.title)}</h3>
+      <p class="decision__text"><b>Ситуация.</b> ${esc(d.situation)}</p>
+      <p class="decision__text" style="margin-top:8px"><b>Что сделать.</b> ${esc(d.action)} ${esc(d.why)}</p>
+      <ol class="decision__steps">${d.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+      ${st === 'rejected' && d.rejectReason ? `<p class="decision__text" style="margin-top:12px"><b>Причина отказа.</b> ${esc(d.rejectReason)}</p>` : ''}
+      ${st === 'postponed' ? `<p class="decision__text" style="margin-top:12px">Вернётся в «Новые» ${dmy(localIso(d.postponedUntil))}.</p>` : ''}
+    </div>
+    <div class="decision__side">
+      <div><div class="decision__effect">${d.effect ? `+${short(d.effect)}` : '—'}</div><div class="card__note">эффект в месяц</div></div>
+      <div class="card__note">Срок: <b>${dmy(d.due)}</b><br>Уверенность: ${d.confidence}%<br>Проверить: ${esc(d.metric)}</div>
+      ${st === 'inprogress' || st === 'done' ? `<div><div class="card__note">Выполнено ${prog.done} из ${prog.total} задач</div><div class="bar bar--thin"><div class="bar__fill bar__fill--green" style="width:${prog.pct}%"></div></div></div>` : ''}
+      <div class="decision__actions">${actions}</div>
+    </div>
+  </article>`;
+}
+
+// ----- Аналитика -----
+function pageAnalytics() {
+  const A = state.analytics;
+  const q = state.filters.articleQuery.toLowerCase();
+  const arts = sortRows(A.articles.filter((a) => !q || a.article.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)), 'articles');
+  const camps = sortRows(A.campaigns, 'campaigns');
+  const maxDrr = A.maxDrr || 15;
+  const demoTag = state.mode === 'live' && A.demo ? '<span class="tag tag--demo">демо</span>' : '';
+  const campTag = state.mode === 'live' && (A.demo || A.campaignsDemo || !A.campaigns.length) ? (A.demo ? '<span class="tag tag--demo">демо</span>' : '') : '';
+  return `${demoBanner()}
+  ${pageHead('Аналитика', 'Таблицы артикулов и рекламных кампаний — на них же работает Центр решений. Нажмите на заголовок столбца, чтобы отсортировать.')}
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Артикулы, 28 дней ${demoTag}</h3>
+      <div class="field" style="width:min(280px,100%)"><label class="visually-hidden" for="artQuery">Фильтр по артикулу</label><input class="input" id="artQuery" data-input="articleQuery" placeholder="Артикул или название" value="${esc(state.filters.articleQuery)}"></div>
+    </div>
+    ${table([
+      { label: 'Артикул', key: 'article' }, { label: 'МП', key: 'mp' }, { label: 'Выручка', key: 'revenue', num: true }, { label: 'Тренд 7 дн', key: 'trend7', num: true },
+      { label: 'Продано', key: 'sold', num: true }, { label: 'Остаток', key: 'stock', num: true }, { label: 'Хватит, дн', key: 'days', num: true },
+      { label: 'Реклама', key: 'adSpend', num: true }, { label: 'ДРР', key: 'drr', num: true }, { label: 'Прибыль', key: 'profit', num: true }, { label: 'Маржа', key: 'margin', num: true }
+    ], arts.map((a) => `<tr>
+      <td><b>${esc(a.article)}</b><div class="row__meta">${esc(a.name)}</div></td><td>${mpName(a.mp)}</td>
+      <td class="num">${rub(a.revenue)}</td>
+      <td class="num ${a.trend7 == null ? 'muted' : a.trend7 >= 0 ? 'good' : 'bad'}">${a.trend7 == null ? '—' : `${a.trend7 > 0 ? '+' : ''}${pct(a.trend7)}`}</td>
+      <td class="num">${nf.format(a.sold)}</td><td class="num">${a.stock ?? '—'}</td>
+      <td class="num ${a.days != null && a.days < state.data.stock.reorderDays ? 'bad' : ''}">${a.days ?? '—'}</td>
+      <td class="num">${rub(a.adSpend)}</td><td class="num ${a.drr > maxDrr ? 'bad' : ''}">${pct(a.drr)}</td>
+      <td class="num ${a.profit < 0 ? 'bad' : ''}">${rub(a.profit)}</td><td class="num ${a.margin < 0 ? 'bad' : ''}">${pct(a.margin)}</td>
+    </tr>`), { sortTable: 'articles' })}
+  </section>
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Рекламные кампании ${campTag}${tagFor('ads')}</h3><span class="card__note">порог ДРР ${maxDrr}%</span></div>
+    ${campaignsTable(camps, maxDrr)}
+  </section>`;
+}
+
+function campaignsTable(camps, maxDrr) {
+  return table([
+    { label: 'Кампания', key: 'name' }, { label: 'МП', key: 'mp' }, { label: 'Статус', key: 'status' }, { label: 'Расход, мес', key: 'spend', num: true },
+    { label: 'Заказы, мес', key: 'orders', num: true }, { label: 'ДРР, мес', key: 'drr', num: true }, { label: 'Расход, нед', key: 'spend7', num: true },
+    { label: 'ДРР, нед', key: 'drr7', num: true }, { label: 'CTR', key: 'ctr', num: true }, { label: 'Цена заказа', key: 'cpo', num: true }
+  ], camps.map((c) => `<tr>
+    <td class="wrap"><b>${esc(c.name)}</b></td><td>${mpName(c.mp)}</td><td>${esc(c.status)}</td>
+    <td class="num">${rub(c.spend)}</td><td class="num">${nf.format(c.orders)}</td>
+    <td class="num ${c.drr == null || c.drr > maxDrr ? 'bad' : 'good'}">${c.drr == null ? 'нет заказов' : pct(c.drr)}</td>
+    <td class="num">${rub(c.spend7)}</td><td class="num ${c.drr7 != null && c.drr7 > maxDrr ? 'bad' : ''}">${pct(c.drr7)}</td>
+    <td class="num">${pct(c.ctr, 2)}</td><td class="num">${rub(c.cpo)}</td>
+  </tr>`), { sortTable: 'campaigns' });
+}
+
+// ----- Финансы -----
+function pageFinance() {
+  const F = state.data.finance;
+  const B = state.data.bank;
+  const lines = [
+    ['Выручка', F.revenue, ''], ['Удержания маркетплейсов (комиссии, логистика, возвраты)', -F.mpCosts, ''], ['К выплате от маркетплейсов', F.payout, 'b'],
+    ['Себестоимость товара', -F.cogs, ''], ['Постоянные расходы', -F.fixed, ''], ['Реклама', -F.ads, ''], ['Чистая прибыль', F.profit, 'b']
+  ];
+  return `${demoBanner()}
+  ${pageHead('Финансы', 'Прибыль = выплаты маркетплейсов − себестоимость − постоянные расходы − реклама. Себестоимость и расходы берутся из settings.json.')}
+  ${cashCard(true)}
+  <div class="cards">
+    <section class="card">
+      <div class="card__head"><h3 class="card__title">Прибыль и убытки, 30 дней ${tagFor('finance')}</h3><span class="card__note">маржа ${pct(F.margin)}</span></div>
+      <div class="rows">${lines.map(([l, v, b]) => `<div class="row"><div class="row__main ${b ? 'row__title' : ''}">${l}</div><div class="row__val ${v < 0 ? 'bad' : b ? 'good' : ''}">${rub(v)}</div></div>`).join('')}</div>
+    </section>
+    <section class="card">
+      <div class="card__head"><h3 class="card__title">Счета ${tagFor('bank')}</h3><span class="card__note">всего ${short(B.total)}</span></div>
+      <div class="rows">${B.accounts.map((a) => `<div class="row"><div class="row__main"><div class="row__title">${esc(a.name)}</div><div class="row__meta">${esc(a.bank)}</div></div><div class="row__val">${rub(a.balance)}</div></div>`).join('') || '<p class="card__note">Подключите Т-Банк или Точку на странице «Интеграции».</p>'}</div>
+    </section>
+    <section class="card">
+      <div class="card__head"><h3 class="card__title">Дебиторка ${tagFor('receivables')}</h3></div>
+      <div class="rows">${state.data.receivables.items.map((r) => `<div class="row"><div class="row__main"><div class="row__title">${esc(r.name)}</div><div class="row__meta">${esc(r.note)}</div></div><div class="row__val">${rub(r.amount)}</div></div>`).join('')}</div>
+    </section>
+  </div>
+  <section>
+    <div class="card__head"><h3 class="card__title">Выписка ${tagFor('bank')}</h3></div>
+    ${table([{ label: 'Дата' }, { label: 'Контрагент' }, { label: 'Назначение' }, { label: 'Сумма', num: true }],
+      B.ops.slice(0, 50).map((o) => `<tr><td>${dmy(o.date)}</td><td>${esc(o.party)}</td><td class="wrap">${esc(o.purpose)}</td><td class="num ${o.amount < 0 ? 'bad' : 'good'}">${o.amount > 0 ? '+' : ''}${rub(o.amount)}</td></tr>`))}
+  </section>`;
+}
+
+// ----- Продажи -----
+function pageSales() {
+  const s = state.data.sales;
+  const top = [...state.analytics.articles].sort((a, b) => b.revenue - a.revenue).slice(0, 8);
+  return `${demoBanner()}
+  ${pageHead('Продажи', 'Выручка по дням за 30 дней, заказы и возвраты по всем маркетплейсам.', '', tagFor('sales'))}
+  <div class="stats stats--4">
+    <div class="card stat"><span class="stat__val">${short(s.today)}</span><span class="stat__label">сегодня (вчера ${short(s.yesterday)})</span></div>
+    <div class="card stat"><span class="stat__val">${short(s.week)}</span><span class="stat__label">${delta(s.weekPrev ? ((s.week - s.weekPrev) / s.weekPrev) * 100 : null, '%', 'к прошлой неделе')}</span></div>
+    <div class="card stat"><span class="stat__val">${nf.format(s.orders7)}</span><span class="stat__label">заказов за 7 дней</span></div>
+    <div class="card stat"><span class="stat__val">${nf.format(s.returns7)} (${pct(s.returnsPct)})</span><span class="stat__label">возвратов за 7 дней</span></div>
+  </div>
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Выручка по дням</h3><div class="legend"><span class="legend__item"><span class="legend__sq" style="background:var(--violet)"></span>WB</span><span class="legend__item"><span class="legend__sq" style="background:var(--blue)"></span>Ozon</span></div></div>
+    <div class="chart" data-chart="sales"></div>
+  </section>
+  <section>
+    <div class="card__head"><h3 class="card__title">Лидеры продаж, 28 дней</h3><a class="card__more" href="#/analytics">Вся аналитика</a></div>
+    ${table([{ label: 'Артикул' }, { label: 'МП' }, { label: 'Выручка', num: true }, { label: 'Продано', num: true }, { label: 'Тренд 7 дн', num: true }],
+      top.map((a) => `<tr><td><b>${esc(a.article)}</b><div class="row__meta">${esc(a.name)}</div></td><td>${mpName(a.mp)}</td><td class="num">${rub(a.revenue)}</td><td class="num">${nf.format(a.sold)}</td><td class="num ${a.trend7 == null ? 'muted' : a.trend7 >= 0 ? 'good' : 'bad'}">${a.trend7 == null ? '—' : pct(a.trend7)}</td></tr>`))}
+  </section>`;
+}
+
+// ----- Маркетплейсы -----
+function pageMarketplaces() {
+  const M = state.data.marketplaces;
+  const block = (key, name, color) => {
+    const m = M[key];
+    const f = m.finance;
+    return `<section class="card">
+      <div class="integ__top" style="margin-bottom:16px"><div class="logo" style="background:${color}">${key === 'wb' ? 'WB' : 'Oz'}</div><div><h3 class="card__title">${name}</h3><div class="card__note">${state.mode === 'live' && !m.connected ? 'не подключён — пример' : '30 дней'}</div></div></div>
+      <div class="stats">
+        <div class="stat"><span class="stat__val">${short(m.revenue)}</span><span class="stat__label">${delta(m.revenuePrev ? ((m.revenue - m.revenuePrev) / m.revenuePrev) * 100 : null)}</span></div>
+        <div class="stat"><span class="stat__val">${short(m.payout)}</span><span class="stat__label">к выплате</span></div>
+        <div class="stat"><span class="stat__val">${short(m.ads)}</span><span class="stat__label">реклама, ДРР ${pct(m.drr)}</span></div>
+        <div class="stat"><span class="stat__val">${nf.format(m.stockQty)} шт</span><span class="stat__label">на складах, ${m.skus} арт.</span></div>
+      </div>
+      ${f ? `<div class="rows" style="margin-top:16px">${[['Начислено за продажи', f.accruals], ['Комиссия', f.commission], ['Логистика и обработка', f.logistics], ['Возвраты и отмены', f.refunds], ['Услуги и продвижение', f.services], ['Компенсации', f.compensation]].map(([l, v]) => `<div class="row"><div class="row__main">${l}</div><div class="row__val ${v < 0 ? 'bad' : ''}">${rub(v)}</div></div>`).join('')}</div>` : ''}
+      ${m.returns != null ? `<p class="card__note" style="margin-top:12px">Возвратов за 30 дней: ${m.returns}</p>` : ''}
+    </section>`;
+  };
+  return `${demoBanner()}
+  ${pageHead('Маркетплейсы', 'Wildberries и Ozon рядом: выручка, выплаты, реклама и склад.', '', tagFor('marketplaces'))}
+  <div class="cards">${block('wb', 'Wildberries', 'var(--wb)')}${block('ozon', 'Ozon', 'var(--ozon)')}</div>
+  ${channelsCard()}`;
+}
+
+// ----- Реклама -----
+function pageAds() {
+  const A = state.data.ads;
+  const camps = sortRows(A.campaigns, 'campaigns');
+  const over = A.campaigns.filter((c) => c.drr == null ? c.spend > 1000 : c.drr > A.maxDrr);
+  return `${demoBanner()}
+  ${pageHead('Реклама', `Продвижение WB и Ozon Performance за 30 дней. Порог ДРР — ${A.maxDrr}% (настраивается в settings.json).`, '', tagFor('ads'))}
+  <div class="stats stats--4">
+    <div class="card stat"><span class="stat__val">${short(A.spend)}</span><span class="stat__label">расход за 30 дней</span></div>
+    <div class="card stat"><span class="stat__val">${short(A.ordersSum)}</span><span class="stat__label">заказы с рекламы</span></div>
+    <div class="card stat"><span class="stat__val ${A.drr > A.maxDrr ? 'bad' : 'good'}">${pct(A.drr)}</span><span class="stat__label">ДРР к общей выручке</span></div>
+    <div class="card stat"><span class="stat__val ${over.length ? 'bad' : ''}">${over.length}</span><span class="stat__label">кампаний выше порога</span></div>
+  </div>
+  ${campaignsTable(camps, A.maxDrr)}`;
+}
+
+// ----- CRM -----
+function pageCrm() {
+  const crm = state.crm;
+  const cs = crmStats();
+  const provider = { amocrm: 'amoCRM', bitrix: 'Битрикс24', local: 'сделки хранятся на сервере', demo: 'демо-сделки в этом браузере' }[crm.provider] || crm.provider;
+  return `${demoBanner()}
+  ${pageHead('CRM', `Воронка сделок: ${provider}. Перетащите карточку, чтобы перенести сделку на другой этап${crm.provider === 'amocrm' || crm.provider === 'bitrix' ? ' — изменение запишется в CRM' : ''}.`, `<button class="btn btn--primary" type="button" data-action="deal-new">${icon('plus')} Новая сделка</button>`)}
+  <div class="counters">
+    <div class="card stat"><span class="stat__val">${pct(cs.conversion, 0)}</span><span class="stat__label">конверсия в успех</span></div>
+    <div class="card stat"><span class="stat__val">${short(cs.avgCheck)}</span><span class="stat__label">средний чек</span></div>
+    <div class="card stat"><span class="stat__val">${cs.open.length}</span><span class="stat__label">открытых сделок</span></div>
+    <div class="card stat"><span class="stat__val">${short(cs.openSum)}</span><span class="stat__label">в работе</span></div>
+  </div>
+  ${crm.deals.length ? '' : `<div class="card empty"><p class="empty__title">Сделок пока нет</p><p>Добавьте первую сделку или подключите amoCRM / Битрикс24 на странице «Интеграции».</p><button class="btn btn--primary" type="button" data-action="deal-new">${icon('plus')} Новая сделка</button></div>`}
+  <div class="board" data-board="deals">
+    ${crm.stages.map((st) => {
+      const list = crm.deals.filter((d) => d.st === st.id);
+      return `<section class="board__col" data-drop="${esc(st.id)}" aria-label="${esc(st.name)}">
+        <div class="board__head"><span class="board__title">${esc(st.name)}</span><span class="board__meta">${list.length}, ${short(sum(list, (d) => d.sum))}</span></div>
+        ${list.map((d) => `<button type="button" class="tcard" draggable="true" data-drag="${esc(d.id)}" data-action="deal-edit" data-id="${esc(d.id)}">
+          <span class="tcard__title">${esc(d.c)}</span>
+          <span class="tcard__sum">${rub(d.sum)}</span>
+          <span class="tcard__meta">${d.mgr ? `<span>${esc(d.mgr)}</span>` : ''}${d.src ? `<span>${esc(d.src)}</span>` : ''}${d.d ? `<span>${dmy(d.d)}</span>` : ''}</span>
+        </button>`).join('') || '<div class="board__empty">Перетащите сделку сюда</div>'}
+      </section>`;
+    }).join('')}
+  </div>`;
+}
+
+// ----- Склад -----
+function pageStock() {
+  const S = state.data.stock;
+  return `${demoBanner()}
+  ${pageHead('Склад', `На сколько дней хватит остатка по каждому артикулу (по продажам за 28 дней). Порог дозаказа — ${S.reorderDays} дней.`, `<a class="btn" href="#/supplies">${icon('truck')} Поставки</a>`, tagFor('stock'))}
+  <div class="stats stats--4">
+    <div class="card stat"><span class="stat__val">${nf.format(S.total)} шт</span><span class="stat__label">всего на складах</span></div>
+    <div class="card stat"><span class="stat__val ${S.low ? 'bad' : ''}">${S.low}</span><span class="stat__label">артикулов на исходе</span></div>
+    <div class="card stat"><span class="stat__val">${S.items.length}</span><span class="stat__label">артикулов с остатком</span></div>
+    <div class="card stat"><span class="stat__val">${nf.format(sum(S.items, (x) => x.inWay || 0))} шт</span><span class="stat__label">в пути</span></div>
+  </div>
+  ${table([{ label: 'Артикул' }, { label: 'МП' }, { label: 'Остаток', num: true }, { label: 'В пути', num: true }, { label: 'Продаж в день', num: true }, { label: 'Хватит на' }],
+    S.items.map((x) => {
+      const low = x.days != null && x.days < S.reorderDays;
+      const w = x.days == null ? 100 : Math.min(100, (x.days / 60) * 100);
+      return `<tr><td><b>${esc(x.article)}</b><div class="row__meta">${esc(x.name)}</div></td><td>${mpName(x.mp)}</td><td class="num">${nf.format(x.qty)}</td><td class="num">${nf.format(x.inWay || 0)}</td><td class="num">${x.perDay ?? '—'}</td>
+      <td style="min-width:180px"><span class="${low ? 'bad' : ''}">${x.days == null ? 'нет продаж' : `${x.days} дн.`}</span><div class="bar bar--thin"><div class="bar__fill ${low ? 'bar__fill--red' : x.days < 30 ? 'bar__fill--amber' : 'bar__fill--green'}" style="width:${w}%"></div></div></td></tr>`;
+    }))}`;
+}
+
+// ----- Поставки -----
+function pageSupplies() {
+  const list = state.data.supplies;
+  return `${demoBanner()}
+  ${pageHead('Поставки', 'Поставки на склады маркетплейсов. API поставок пока не подключён — таблица показывает пример; создайте задачу, чтобы запланировать поставку.', `<button class="btn btn--primary" type="button" data-action="task-new" data-title="Создать поставку на склад">${icon('plus')} Запланировать поставку</button>`, tagFor('supplies'))}
+  ${table([{ label: 'Номер' }, { label: 'МП' }, { label: 'Склад' }, { label: 'Дата' }, { label: 'Штук', num: true }, { label: 'Статус' }],
+    list.map((x) => `<tr><td><b>${esc(x.id)}</b></td><td>${mpName(x.mp)}</td><td>${esc(x.warehouse)}</td><td>${dmy(x.date)}</td><td class="num">${nf.format(x.qty)}</td><td><span class="tag ${x.status === 'Принята' ? 'tag--green' : x.status === 'В пути' ? 'tag--blue' : ''}">${esc(x.status)}</span></td></tr>`))}`;
+}
+
+// ----- Налоги -----
+function pageTaxes() {
+  const pays = state.data.payments;
+  const rate = state.data.settings.taxRate ?? 6;
+  const usn = (state.data.kpi.revenue.value * rate) / 100;
+  const taxes = pays.filter((p) => p.kind === 'tax');
+  return `${demoBanner()}
+  ${pageHead('Налоги и платежи', 'График платежей из settings.json на ближайшие 45 дней. Платежи учитываются в прогнозе денег.', `<button class="btn" type="button" data-action="task-new" data-title="Оплатить налог">${icon('plus')} Задача на оплату</button>`)}
+  <div class="stats stats--4">
+    <div class="card stat"><span class="stat__val">${short(sum(pays, (p) => p.amount))}</span><span class="stat__label">все платежи, 45 дней</span></div>
+    <div class="card stat"><span class="stat__val">${short(sum(taxes, (p) => p.amount))}</span><span class="stat__label">из них налоги и взносы</span></div>
+    <div class="card stat"><span class="stat__val">${pays[0] ? `${pays[0].daysLeft} дн.` : '—'}</span><span class="stat__label">до ближайшего платежа</span></div>
+    <div class="card stat"><span class="stat__val">${short(usn)}</span><span class="stat__label">УСН ${rate}% с выручки 30 дней (оценка)</span></div>
+  </div>
+  ${table([{ label: 'Платёж' }, { label: 'Тип' }, { label: 'Дата' }, { label: 'Осталось' }, { label: 'Сумма', num: true }],
+    pays.map((p) => `<tr><td><b>${esc(p.name)}</b></td><td>${{ tax: 'налог', salary: 'зарплата', other: 'прочее' }[p.kind] || p.kind}</td><td>${dmy(p.date)}</td><td class="${p.daysLeft <= 3 ? 'warn' : ''}">${p.daysLeft} дн.</td><td class="num">${rub(p.amount)}</td></tr>`))}`;
+}
+
+// ----- Документы -----
+const DOC_SOURCES = ['Все', 'Почта', 'ЭДО', 'WB', 'Ozon', 'Банк', 'Telegram', 'Вручную'];
+const DOC_STATUSES = ['Новый', 'Обработан', 'Ждёт подписи', 'Оплачен'];
+function pageDocuments() {
+  const f = state.filters;
+  const list = state.documents.filter((d) => (f.docSource === 'Все' || d.source === f.docSource) && (f.docStatus === 'Все' || d.status === f.docStatus));
+  return `${demoBanner()}
+  ${pageHead('Документы', `Счета, акты и договоры из почты, ЭДО, кабинетов маркетплейсов, банка и Telegram. ${state.mode === 'live' && state.ai ? 'ИИ читает каждый документ и создаёт задачи «подписать» и «оплатить».' : 'Без ключа ИИ документ разбирается по имени файла.'}`,
+    `<button class="btn btn--primary" type="button" data-action="doc-upload">${icon('upload')} Загрузить файл</button>`)}
+  <div class="toolbar" role="group" aria-label="Фильтр по источнику">
+    ${DOC_SOURCES.map((s) => `<button class="chip ${f.docSource === s ? 'chip--on' : ''}" type="button" data-action="doc-filter" data-value="${s}" aria-pressed="${f.docSource === s}">${s}</button>`).join('')}
+    <label class="visually-hidden" for="docStatus">Статус</label>
+    <select class="select select--inline" id="docStatus" data-input="docStatus">${['Все', ...DOC_STATUSES].map((s) => `<option ${f.docStatus === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+  </div>
+  ${table([{ label: 'Документ' }, { label: 'Источник' }, { label: 'Тип и раздел' }, { label: 'Сумма', num: true }, { label: 'Срок' }, { label: 'Статус' }, { label: '' }],
+    list.map((d) => `<tr>
+      <td class="wrap"><b>${state.mode === 'live' ? `<a href="/api/documents/${esc(d.id)}/file" target="_blank" rel="noopener">${esc(d.name)}</a>` : esc(d.name)}</b>
+        <div class="row__meta">${esc(d.ai?.counterparty || d.from || '')}${d.ai?.summary ? `. ${esc(d.ai.summary)}` : ''}</div>
+        ${d.error ? `<div class="row__meta bad">${esc(d.error)}</div>` : ''}</td>
+      <td>${esc(d.source)}</td>
+      <td>${esc(d.ai?.type || '—')}<div class="row__meta">${esc(d.ai?.section || '')} ${d.ai?.by === 'ai' ? '<span class="tag tag--ai">ИИ</span>' : ''}</div></td>
+      <td class="num">${d.ai?.amount ? rub(d.ai.amount) : '—'}</td>
+      <td class="${d.ai?.due && d.ai.due < localIso() && d.status !== 'Оплачен' ? 'overdue' : ''}">${dmy(d.ai?.due)}</td>
+      <td><label class="visually-hidden" for="st-${esc(d.id)}">Статус документа</label><select class="select select--inline" id="st-${esc(d.id)}" data-doc-status="${esc(d.id)}">${DOC_STATUSES.map((s) => `<option ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+      <td><button class="btn btn--icon btn--ghost" type="button" data-action="doc-delete" data-id="${esc(d.id)}" aria-label="Удалить документ ${esc(d.name)}">${icon('x')}</button></td>
+    </tr>`))}`;
+}
+
+// ----- Интеграции -----
+function pageIntegrations() {
+  const list = state.mode === 'live' ? state.integrations : Object.keys(INTEG_META).map((key) => ({ key, name: { wb: 'Wildberries', ozon: 'Ozon Seller', wbads: 'WB Продвижение', ozonperf: 'Ozon Performance', amocrm: 'amoCRM', bitrix: 'Битрикс24', tbank: 'Т-Банк Бизнес', tochka: 'Точка', imap: 'Почта (IMAP)', telegram: 'Telegram-бот', diadok: 'Диадок (ЭДО)', wbdocs: 'Документы WB', claude: 'Claude API' }[key], group: '', enabled: false, env: [], status: null }));
+  const groups = [...new Set(list.map((i) => i.group))];
+  const card = (i) => {
+    const m = INTEG_META[i.key] || { lg: '?', bg: 'var(--s3)', desc: '' };
+    let status;
+    if (state.mode === 'demo') status = '<span class="integ__status warn">Демо-режим: подключение работает при запуске через сервер</span>';
+    else if (!i.enabled) status = `<span class="integ__status muted">Не подключено. Добавьте в .env: ${i.env.map((e) => `<span class="code">${esc(e)}</span>`).join(' ')}</span>`;
+    else if (!i.status) status = '<span class="integ__status warn">Ключ задан, ждём первой синхронизации</span>';
+    else if (i.status.ok) status = `<span class="integ__status good">Подключено, синхронизация ${new Date(i.status.at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>`;
+    else status = `<span class="integ__status bad">Ошибка подключения</span><div class="integ__err">${esc(i.status.error)}</div>`;
+    return `<article class="card integ"><div class="integ__top"><div class="logo" style="background:${m.bg}">${esc(m.lg)}</div><div><div class="integ__name">${esc(i.name)}</div><div class="integ__desc">${esc(m.desc)}</div></div></div>${status}</article>`;
+  };
+  return `${demoBanner()}
+  ${pageHead('Интеграции', 'Каждый источник включается, когда в .env на сервере есть его ключ. Ключи никогда не передаются в браузер. Без ключа блок показывает пример с пометкой «демо».', `<button class="btn" type="button" data-action="sync">${icon('refresh')} Синхронизировать</button>`)}
+  ${groups.map((g) => `${g ? `<h3 class="group-title">${esc(g)}</h3>` : ''}<div class="cards">${list.filter((i) => i.group === g).map(card).join('')}</div>`).join('')}`;
+}
+
+// ----- Задачи -----
+function pageTasks() {
+  const f = state.filters;
+  const today = localIso();
+  const all = state.tasks;
+  const list = all.filter((t) => (f.taskAssignee === 'Все' || t.assignee === f.taskAssignee) && (f.taskPriority === 'Все' || t.priority === f.taskPriority) && (!f.taskAI || t.byAI));
+  const open = all.filter((t) => t.status !== 'done');
+  const cols = [['todo', 'К выполнению'], ['doing', 'В работе'], ['done', 'Готово']];
+  const people = [...new Set([...state.data.team.map((m) => m.name), ...all.map((t) => t.assignee).filter(Boolean)])];
+  return `${demoBanner()}
+  ${pageHead('Задачи', 'Перетащите карточку между колонками или откройте её, чтобы сменить статус. Задачи от ИИ появляются из документов и принятых решений.', `<button class="btn btn--primary" type="button" data-action="task-new">${icon('plus')} Новая задача</button>`)}
+  <div class="counters">
+    <div class="card stat"><span class="stat__val">${open.length}</span><span class="stat__label">открыто</span></div>
+    <div class="card stat"><span class="stat__val">${open.filter((t) => t.due === today).length}</span><span class="stat__label">на сегодня</span></div>
+    <div class="card stat"><span class="stat__val ${open.some((t) => t.due && t.due < today) ? 'bad' : ''}">${open.filter((t) => t.due && t.due < today).length}</span><span class="stat__label">просрочено</span></div>
+    <div class="card stat"><span class="stat__val">${open.filter((t) => t.byAI).length}</span><span class="stat__label">создал ИИ</span></div>
+  </div>
+  <div class="toolbar">
+    <label class="visually-hidden" for="fAssignee">Исполнитель</label>
+    <select class="select select--inline" id="fAssignee" data-input="taskAssignee"><option value="Все">Все исполнители</option>${people.map((p) => `<option ${f.taskAssignee === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
+    <label class="visually-hidden" for="fPrio">Приоритет</label>
+    <select class="select select--inline" id="fPrio" data-input="taskPriority"><option value="Все">Любой приоритет</option>${Object.entries(prioName).map(([k, v]) => `<option value="${k}" ${f.taskPriority === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+    <label class="check"><input type="checkbox" data-input="taskAI" ${f.taskAI ? 'checked' : ''}> Только от ИИ</label>
+  </div>
+  <div class="board board--stack" data-board="tasks">
+    ${cols.map(([id, name]) => {
+      const items = list.filter((t) => t.status === id);
+      return `<section class="board__col" data-drop="${id}" aria-label="${name}">
+        <div class="board__head"><span class="board__title">${name}</span><span class="board__meta">${items.length}</span></div>
+        ${items.map(taskCard).join('') || '<div class="board__empty">Перетащите задачу сюда</div>'}
+      </section>`;
+    }).join('')}
+  </div>`;
+}
+
+function taskCard(t) {
+  const overdue = t.status !== 'done' && t.due && t.due < localIso();
+  const doc = t.docId ? state.documents.find((d) => d.id === t.docId) : null;
+  return `<button type="button" class="tcard" draggable="true" data-drag="${esc(t.id)}" data-action="task-edit" data-id="${esc(t.id)}">
+    <span class="tcard__title">${esc(t.title)}</span>
+    <span class="tcard__meta">
+      <span class="prio prio--${t.priority || 'medium'}">${prioName[t.priority] || 'Средний'}</span>
+      ${t.due ? `<span class="${overdue ? 'overdue' : ''}">${overdue ? 'просрочено, ' : ''}${dmy(t.due)}</span>` : ''}
+      ${t.assignee ? `<span>${esc(t.assignee)}</span>` : ''}
+      ${t.byAI ? '<span class="tag tag--ai">создал ИИ</span>' : ''}
+    </span>
+    ${doc ? `<span class="tcard__meta">${icon('file')} ${esc(doc.name)}</span>` : ''}
+  </button>`;
+}
+
+const PAGES = { home: pageHome, decisions: pageDecisions, analytics: pageAnalytics, finance: pageFinance, sales: pageSales, marketplaces: pageMarketplaces, ads: pageAds, crm: pageCrm, stock: pageStock, supplies: pageSupplies, taxes: pageTaxes, documents: pageDocuments, integrations: pageIntegrations, tasks: pageTasks };
+
+/* =====================================================================
+   РЕНДЕР
+   ===================================================================== */
+function renderChrome() {
+  const D = state.data;
+  $('#companyName').textContent = D.company;
+  const h = new Date().getHours();
+  const hello = h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+  $('#greeting').textContent = `${hello}, ${D.owner}`;
+  $('#today').textContent = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  // Значки подключённых источников
+  const src = [['wb', 'WB'], ['ozon', 'Ozon'], ['bank', 'Банк'], ['crm', 'CRM']];
+  $('#sources').innerHTML = src.map(([k, l]) => {
+    const on = state.mode === 'live' && D.sources[k];
+    const cls = state.mode === 'demo' ? 'source--demo' : on ? 'source--on' : '';
+    return `<span class="source ${cls}" title="${state.mode === 'demo' ? 'демо' : on ? 'подключён' : 'не подключён'}"><span class="source__dot"></span>${l}</span>`;
+  }).join('');
+  const syncAt = D.lastSync ? new Date(D.lastSync) : null;
+  const syncLabel = syncAt ? (localIso(syncAt) === localIso() ? syncAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : syncAt.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) : '';
+  $('#syncText').textContent = state.mode === 'demo' ? 'Демо-данные' : state.data.syncing ? 'Синхронизация…' : syncAt ? `Обновлено ${syncLabel}` : 'Нет синхронизации';
+  $('#logoutLink').hidden = state.mode !== 'live';
+  // Меню со счётчиками (просроченные задачи, новые решения)
+  const overdue = state.tasks.filter((t) => t.status !== 'done' && t.due && t.due < localIso()).length;
+  const newDec = state.decisions.filter((d) => decisionStatus(d) === 'new').length;
+  $('#nav').innerHTML = MENU.map(([k, l, ic]) => {
+    const n = k === 'tasks' ? overdue : k === 'decisions' ? newDec : 0;
+    return `<a class="nav__link ${state.page === k ? 'nav__link--active' : ''}" href="#/${k}" ${state.page === k ? 'aria-current="page"' : ''}>${icon(ic)}<span>${l}</span>${n ? `<span class="nav__count" aria-label="${n} требуют внимания">${n}</span>` : ''}</a>`;
+  }).join('');
+  $('#chatSub').textContent = state.mode === 'live' && state.ai ? 'Отвечает по живым данным через Claude' : state.mode === 'live' ? 'ИИ не подключён — отвечаю сводкой по данным' : 'Демо-режим: отвечаю по примерам';
+}
+
+function render() {
+  renderChrome();
+  const page = $('#page');
+  page.innerHTML = (PAGES[state.page] || pageHome)();
+  drawCharts();
+  bindDragDrop();
+}
+
+// Маршрутизация по адресу #/страница — работает и с кнопкой «Назад» в браузере
+function route() {
+  const key = location.hash.replace(/^#\/?/, '') || 'home';
+  state.page = PAGES[key] ? key : 'home';
+  document.title = `${MENU.find(([k]) => k === state.page)?.[1] || 'Главная'} — BrandOS`;
+  closeMenu();
+  render();
+  window.scrollTo(0, 0);
+  $('#page').focus({ preventScroll: true });
+}
+
+/* =====================================================================
+   ПЕРЕТАСКИВАНИЕ (Drag & Drop) — для задач и сделок
+   На телефонах drag-and-drop не работает пальцем, поэтому статус и этап
+   также меняются в окне редактирования (нажмите на карточку).
+   ===================================================================== */
+function bindDragDrop() {
+  const board = $('[data-board]');
+  if (!board) return;
+  const kind = board.dataset.board;
+  board.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('[data-drag]');
+    if (!card) return;
+    e.dataTransfer.setData('text/plain', card.dataset.drag);
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('tcard--dragging');
+  });
+  board.addEventListener('dragend', (e) => e.target.closest?.('[data-drag]')?.classList.remove('tcard--dragging'));
+  board.addEventListener('dragover', (e) => {
+    const col = e.target.closest('[data-drop]');
+    if (!col) return;
+    e.preventDefault();
+    $$('.board__col--over', board).forEach((c) => c !== col && c.classList.remove('board__col--over'));
+    col.classList.add('board__col--over');
+  });
+  board.addEventListener('dragleave', (e) => { const col = e.target.closest('[data-drop]'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('board__col--over'); });
+  board.addEventListener('drop', async (e) => {
+    const col = e.target.closest('[data-drop]');
+    if (!col) return;
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    const target = col.dataset.drop;
+    try {
+      if (kind === 'tasks') {
+        const t = state.tasks.find((x) => x.id === id);
+        if (t && t.status !== target) await saveTask({ ...t, status: target });
+      } else {
+        const d = state.crm.deals.find((x) => x.id === id);
+        if (d && d.st !== target) { await saveDeal({ ...d, st: target }); toast(state.crm.provider === 'amocrm' || state.crm.provider === 'bitrix' ? 'Этап обновлён в CRM' : 'Этап сделки обновлён'); }
+      }
+    } catch (err) { toast(err.message); }
+    render();
+  });
+}
+
+/* =====================================================================
+   МОДАЛЬНОЕ ОКНО С ФОРМОЙ
+   Валидация: ошибка показывается при уходе с поля (blur) и исчезает при вводе.
+   ===================================================================== */
+let lastFocus = null;
+function openModal({ title, fields, submit = 'Сохранить', onSubmit, danger }) {
+  lastFocus = document.activeElement;
+  const fieldHtml = (f) => {
+    const id = `f-${f.name}`;
+    const req = f.required ? 'required aria-required="true"' : '';
+    let control;
+    if (f.type === 'select') control = `<select class="select" id="${id}" name="${f.name}" ${req}>${f.options.map(([v, l]) => `<option value="${esc(v)}" ${String(f.value) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+    else if (f.type === 'textarea') control = `<textarea class="textarea" id="${id}" name="${f.name}" ${req}>${esc(f.value || '')}</textarea>`;
+    else control = `<input class="input" id="${id}" name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value ?? '')}" ${f.type === 'number' ? 'min="0" step="1" inputmode="numeric"' : ''} ${req}>`;
+    return `<div class="field ${f.half ? '' : ''}"><label class="field__label" for="${id}">${f.label}</label>${control}<div class="field__error" id="${id}-err"></div></div>`;
+  };
+  // Поля с half: true выводим парами в две колонки
+  let body = '';
+  for (let i = 0; i < fields.length; i++) {
+    if (fields[i].half && fields[i + 1]?.half) { body += `<div class="grid-2">${fieldHtml(fields[i])}${fieldHtml(fields[i + 1])}</div>`; i++; }
+    else body += fieldHtml(fields[i]);
+  }
+  const m = $('#modal');
+  m.innerHTML = `<div class="modal__box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <form class="modal__form" novalidate>
+      <div class="modal__head"><h2 class="modal__title" id="modal-title">${title}</h2><button class="btn btn--icon btn--ghost" type="button" data-action="modal-close" aria-label="Закрыть">${icon('x')}</button></div>
+      <div class="modal__body">${body}</div>
+      <div class="modal__foot">
+        ${danger ? `<button class="btn btn--danger" type="button" data-action="modal-danger">${danger.label}</button>` : ''}
+        <button class="btn btn--ghost" type="button" data-action="modal-close">Отмена</button>
+        <button class="btn btn--primary" type="submit">${submit}</button>
+      </div>
+    </form></div>`;
+  m.classList.add('modal--open');
+  const form = $('form', m);
+  const validate = (el) => {
+    const err = $(`#${el.id}-err`);
+    const bad = el.required && !String(el.value).trim();
+    el.classList.toggle('input--invalid', bad);
+    el.setAttribute('aria-invalid', bad);
+    err.textContent = bad ? 'Заполните это поле' : '';
+    return !bad;
+  };
+  form.addEventListener('focusout', (e) => e.target.matches('input,select,textarea') && validate(e.target));
+  form.addEventListener('input', (e) => { e.target.classList.remove('input--invalid'); const err = $(`#${e.target.id}-err`); if (err) err.textContent = ''; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const els = $$('input,select,textarea', form);
+    if (!els.map(validate).every(Boolean)) { els.find((x) => x.classList.contains('input--invalid'))?.focus(); return; }
+    const btn = $('button[type=submit]', form);
+    btn.disabled = true;
+    try { await onSubmit(Object.fromEntries(new FormData(form))); closeModal(); render(); }
+    catch (err) { toast(err.message); btn.disabled = false; }
+  });
+  if (danger) $('[data-action="modal-danger"]', m).addEventListener('click', async () => { if (!confirm(danger.confirm)) return; try { await danger.run(); closeModal(); render(); } catch (err) { toast(err.message); } });
+  setTimeout(() => $('input,select,textarea', form)?.focus(), 30);
+}
+function closeModal() { const m = $('#modal'); m.classList.remove('modal--open'); m.innerHTML = ''; lastFocus?.focus?.(); }
+
+// Ловушка фокуса: Tab не уходит из открытого окна
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if ($('#modal').classList.contains('modal--open')) return closeModal();
+    if ($('#chat').classList.contains('chat--open')) return closeChat();
+    if ($('#sidebar').classList.contains('sidebar--open')) return closeMenu();
+    $('#searchResults').classList.remove('search__results--open');
+  }
+  if (e.key === 'Tab' && $('#modal').classList.contains('modal--open')) {
+    const f = $$('#modal button, #modal input, #modal select, #modal textarea').filter((x) => !x.disabled);
+    if (!f.length) return;
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  }
+});
+
+// ----- Формы задач и сделок -----
+function taskModal(t = {}) {
+  const people = [...new Set([...state.data.team.map((m) => m.name), t.assignee].filter(Boolean))];
+  openModal({
+    title: t.id ? 'Задача' : 'Новая задача',
+    submit: t.id ? 'Сохранить задачу' : 'Создать задачу',
+    fields: [
+      { name: 'title', label: 'Что сделать', value: t.title || '', required: true },
+      { name: 'status', label: 'Статус', type: 'select', value: t.status || 'todo', options: [['todo', 'К выполнению'], ['doing', 'В работе'], ['done', 'Готово']], half: true },
+      { name: 'priority', label: 'Приоритет', type: 'select', value: t.priority || 'medium', options: Object.entries(prioName), half: true },
+      { name: 'due', label: 'Срок', type: 'date', value: t.due || addDays(1), half: true },
+      { name: 'assignee', label: 'Исполнитель', type: 'select', value: t.assignee || people[0], options: people.map((p) => [p, p]), half: true },
+      { name: 'description', label: 'Комментарий', type: 'textarea', value: t.description || '' }
+    ],
+    onSubmit: async (v) => { await saveTask({ ...t, ...v }); toast(t.id ? 'Задача сохранена' : 'Задача создана'); },
+    danger: t.id ? { label: 'Удалить', confirm: `Удалить задачу «${t.title}»?`, run: () => deleteTask(t.id) } : null
+  });
+}
+
+function dealModal(d = {}) {
+  const crm = state.crm;
+  const ext = crm.provider === 'amocrm' || crm.provider === 'bitrix';
+  const people = state.data.team.map((m) => m.name);
+  openModal({
+    title: d.id ? 'Сделка' : 'Новая сделка',
+    submit: d.id ? 'Сохранить сделку' : 'Создать сделку',
+    fields: [
+      { name: 'c', label: 'Название / клиент', value: d.c || '', required: true },
+      { name: 'sum', label: 'Сумма, ₽', type: 'number', value: d.sum ?? '', required: true, half: true },
+      { name: 'st', label: 'Этап', type: 'select', value: d.st || crm.stages[0]?.id, options: crm.stages.map((s) => [s.id, s.name]), half: true },
+      { name: 'mgr', label: 'Менеджер', type: 'select', value: d.mgr || people[1] || people[0], options: [...new Set([...people, d.mgr].filter(Boolean))].map((p) => [p, p]), half: true },
+      { name: 'src', label: 'Источник', value: d.src || 'Сайт', half: true }
+    ],
+    onSubmit: async (v) => { await saveDeal({ ...d, ...v, sum: Number(v.sum) || 0 }); toast(ext ? 'Сделка сохранена в CRM' : 'Сделка сохранена'); },
+    danger: d.id && !ext ? { label: 'Удалить', confirm: `Удалить сделку «${d.c}»?`, run: () => deleteDeal(d.id) } : null
+  });
+}
+
+/* =====================================================================
+   ИИ-ЧАТ
+   ===================================================================== */
+const HINTS = ['Что с деньгами на месяц?', 'Какие кампании резать?', 'Что дозаказать?', 'Как выполняем план?'];
+function openChat(prefill) {
+  $('#chat').classList.add('chat--open');
+  $('#chat').setAttribute('aria-hidden', 'false');
+  $('#scrim').classList.add('scrim--on');
+  renderChat();
+  const input = $('#chatInput');
+  if (prefill) input.value = prefill;
+  setTimeout(() => input.focus(), 50);
+}
+function closeChat() {
+  $('#chat').classList.remove('chat--open');
+  $('#chat').setAttribute('aria-hidden', 'true');
+  if (!$('#sidebar').classList.contains('sidebar--open')) $('#scrim').classList.remove('scrim--on');
+}
+function renderChat(waiting = false) {
+  const log = $('#chatLog');
+  const intro = state.chat.length ? '' : `<div class="msg msg--bot">Здравствуйте! Я вижу сводку дашборда, задачи, сделки и документы. Спросите, например, «${HINTS[0]}»</div>`;
+  log.innerHTML = intro + state.chat.map((m) => `<div class="msg ${m.role === 'user' ? 'msg--user' : 'msg--bot'}">${esc(m.content)}</div>`).join('') + (waiting ? '<div class="msg msg--bot msg--wait">Думаю…</div>' : '');
+  log.scrollTop = log.scrollHeight;
+  $('#chatHints').innerHTML = state.chat.length ? '' : HINTS.map((h) => `<button class="chip" type="button" data-action="chat-hint" data-text="${esc(h)}">${esc(h)}</button>`).join('');
+}
+// Ответ в демо-режиме — по примерам, честно с пометкой
+function demoAnswer(q) {
+  const D = state.data;
+  const t = q.toLowerCase();
+  if (/ден|касс|разрыв|счет|счёт/.test(t)) return `Сейчас на счетах ${rub(D.cashflow.start)}. ${D.cashflow.gap ? `По прогнозу кассовый разрыв ${dmy(D.cashflow.gap.date)}: ${rub(D.cashflow.gap.amount)} — из-за платежей «${D.cashflow.gap.reason}». Предлагаю перенести оплату поставщику и проверить ближайшие выплаты WB и Ozon.` : 'Разрывов в ближайшие 30 дней не видно.'}\n\n(Демо-режим: цифры — примеры.)`;
+  if (/рекл|кампан|дрр/.test(t)) { const bad = D.ads.campaigns.filter((c) => c.drr == null || c.drr > D.ads.maxDrr); return `Выше порога ДРР ${D.ads.maxDrr}%: ${bad.map((c) => `«${c.name}» (${c.drr == null ? 'нет заказов' : `${c.drr}%`}, расход ${rub(c.spend)})`).join('; ')}.\n\n(Демо-режим: цифры — примеры.)`; }
+  if (/заказ|остат|склад|дозак/.test(t)) { const low = D.stock.items.filter((x) => x.days < D.stock.reorderDays); return `Остатка меньше чем на ${D.stock.reorderDays} дней: ${low.map((x) => `${x.article} — ${x.days} дн.`).join(', ')}. Решения о дозаказе — в Центре решений.\n\n(Демо-режим: цифры — примеры.)`; }
+  if (/план/.test(t)) return `Факт месяца ${rub(D.plan.fact)} из ${rub(D.plan.plan)} (${D.plan.pct}%). Прогноз на конец месяца — ${rub(D.plan.forecast)}.\n\n(Демо-режим: цифры — примеры.)`;
+  return `Выручка за 30 дней ${rub(D.kpi.revenue.value)}, чистая прибыль ${rub(D.kpi.profit.value)}, маржа ${D.kpi.margin.value}%. Спросите про деньги, рекламу, склад или план.\n\n(Демо-режим: подключите сервер и ключ Claude, чтобы я отвечал по живым данным.)`;
+}
+async function sendChat(text) {
+  if (!text.trim()) return;
+  state.chat.push({ role: 'user', content: text.trim() });
+  renderChat(true);
+  try {
+    let reply;
+    if (state.mode === 'live') reply = (await api('POST', '/api/chat', { messages: state.chat })).reply;
+    else { await new Promise((r) => setTimeout(r, 400)); reply = demoAnswer(text); }
+    state.chat.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    state.chat.push({ role: 'assistant', content: `Не получилось ответить: ${e.message}` });
+  }
+  sessionStorage.setItem('bos_chat', JSON.stringify(state.chat.slice(-30)));
+  renderChat();
+}
+$('#chatForm').addEventListener('submit', (e) => { e.preventDefault(); const i = $('#chatInput'); const v = i.value; i.value = ''; sendChat(v); });
+
+/* =====================================================================
+   ПОИСК
+   ===================================================================== */
+function searchResults(q) {
+  q = q.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const out = [];
+  for (const [k, l] of MENU) if (l.toLowerCase().includes(q)) out.push({ kind: 'раздел', title: l, href: `#/${k}` });
+  for (const t of state.tasks) if (t.title.toLowerCase().includes(q)) out.push({ kind: 'задача', title: t.title, href: '#/tasks' });
+  for (const d of state.crm.deals) if (d.c.toLowerCase().includes(q)) out.push({ kind: 'сделка', title: d.c, href: '#/crm' });
+  for (const d of state.documents) if (`${d.name} ${d.ai?.counterparty || ''}`.toLowerCase().includes(q)) out.push({ kind: 'документ', title: d.name, href: '#/documents' });
+  for (const a of state.analytics.articles) if (`${a.article} ${a.name}`.toLowerCase().includes(q)) out.push({ kind: 'артикул', title: `${a.article} ${a.name}`, href: '#/analytics', q: a.article });
+  return out.slice(0, 10);
+}
+$('#searchInput').addEventListener('input', (e) => {
+  const res = searchResults(e.target.value);
+  const box = $('#searchResults');
+  box.innerHTML = res.length ? res.map((r) => `<a class="search__item" role="option" href="${r.href}" data-q="${esc(r.q || '')}"><span>${esc(r.title)}</span><span class="search__kind">${r.kind}</span></a>`).join('') : (e.target.value.trim().length >= 2 ? '<div class="search__item muted">Ничего не найдено</div>' : '');
+  box.classList.toggle('search__results--open', e.target.value.trim().length >= 2);
+});
+$('#searchForm').addEventListener('submit', (e) => { e.preventDefault(); $('#searchResults a')?.click(); });
+document.addEventListener('click', (e) => {
+  const item = e.target.closest('.search__item');
+  if (item?.dataset.q) state.filters.articleQuery = item.dataset.q;
+  if (!e.target.closest('.search')) $('#searchResults').classList.remove('search__results--open');
+  if (item) { $('#searchResults').classList.remove('search__results--open'); $('#searchInput').value = ''; }
+});
+
+/* =====================================================================
+   МЕНЮ НА ТЕЛЕФОНЕ, УВЕДОМЛЕНИЯ, СИНХРОНИЗАЦИЯ
+   ===================================================================== */
+function openMenu() { $('#sidebar').classList.add('sidebar--open'); $('#scrim').classList.add('scrim--on'); $('[data-action="menu"]').setAttribute('aria-expanded', 'true'); $('#nav a')?.focus(); }
+function closeMenu() { $('#sidebar').classList.remove('sidebar--open'); if (!$('#chat').classList.contains('chat--open')) $('#scrim').classList.remove('scrim--on'); $('[data-action="menu"]')?.setAttribute('aria-expanded', 'false'); }
+
+let toastTimer;
+function toast(text) { const t = $('#toast'); t.textContent = text; t.classList.add('toast--on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('toast--on'), 3200); }
+
+async function syncNow(btn) {
+  if (state.mode === 'demo') return toast('Демо-режим: синхронизация работает при запуске через сервер');
+  btn && (btn.disabled = true);
+  try {
+    await api('POST', '/api/sync');
+    state.data.syncing = true; renderChrome();
+    toast('Синхронизация запущена');
+    // Опрашиваем статус каждые 3 секунды, пока сервер не закончит
+    for (let i = 0; i < 200; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const s = await api('GET', '/api/sync');
+      if (!s.syncing) break;
+    }
+    await loadLive();
+    render();
+    toast('Данные обновлены');
+  } catch (e) { toast(e.message); }
+  btn && (btn.disabled = false);
+}
+
+async function recomputeDecisions(btn) {
+  btn && (btn.disabled = true);
+  try {
+    if (state.mode === 'live') {
+      toast('Пересчитываю решения…');
+      const r = await api('POST', '/api/decisions/recompute');
+      state.decisions = r.decisions; state.decMeta = r;
+    } else {
+      // В демо: возвращаем новые решения из примера, сохраняя ответы владельца
+      const answered = new Map(state.decisions.filter((d) => d.status !== 'new').map((d) => [d.key, d]));
+      state.decisions = [...answered.values(), ...DEMO.decisions.filter((d) => !answered.has(d.key)).map((d) => ({ ...d }))];
+      state.decMeta = { source: 'rules', at: new Date().toISOString() };
+      persistDemo();
+    }
+    state.filters.decTab = 'new';
+    if (state.page !== 'decisions') location.hash = '#/decisions'; else render();
+    toast('Решения пересчитаны');
+  } catch (e) { toast(e.message); }
+  btn && (btn.disabled = false);
+}
+
+/* =====================================================================
+   ДЕЛЕГИРОВАНИЕ СОБЫТИЙ
+   Один обработчик на весь документ вместо сотни на каждой кнопке.
+   Аналогия: один администратор на входе вместо охранника у каждой двери.
+   ===================================================================== */
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const a = el.dataset.action;
+  const id = el.dataset.id;
+  switch (a) {
+    case 'menu': return $('#sidebar').classList.contains('sidebar--open') ? closeMenu() : openMenu();
+    case 'scrim': closeMenu(); return closeChat();
+    case 'chat-open': closeMenu(); return openChat();
+    case 'chat-close': return closeChat();
+    case 'chat-hint': return sendChat(el.dataset.text);
+    case 'sync': return syncNow(el);
+    case 'modal-close': return closeModal();
+    case 'task-new': return taskModal(el.dataset.title ? { title: el.dataset.title } : {});
+    case 'task-edit': return taskModal(state.tasks.find((t) => t.id === id));
+    case 'deal-new': return dealModal();
+    case 'deal-edit': return dealModal(state.crm.deals.find((d) => d.id === id));
+    case 'doc-upload': return $('#fileInput').click();
+    case 'doc-filter': state.filters.docSource = el.dataset.value; return render();
+    case 'doc-delete': {
+      const d = state.documents.find((x) => x.id === id);
+      if (!d || !confirm(`Удалить документ «${d.name}»? Файл будет удалён без возможности восстановления.`)) return;
+      try { if (state.mode === 'live') await api('DELETE', `/api/documents/${id}`); state.documents = state.documents.filter((x) => x.id !== id); persistDemo(); toast('Документ удалён'); render(); } catch (err) { toast(err.message); }
+      return;
+    }
+    case 'sort': {
+      const s = state.sort[el.dataset.table];
+      if (s.key === el.dataset.key) s.dir *= -1; else { s.key = el.dataset.key; s.dir = -1; }
+      return render();
+    }
+    case 'dec-tab': state.filters.decTab = el.dataset.tab; return render();
+    case 'dec-recompute': return recomputeDecisions(el);
+    case 'dec-accept': el.disabled = true; try { await decide(id, 'accept'); toast('Решение принято: шаги добавлены в задачи'); } catch (err) { toast(err.message); el.disabled = false; } return;
+    case 'dec-postpone': try { await decide(id, 'postpone'); toast('Отложено на 3 дня'); } catch (err) { toast(err.message); } return;
+    case 'dec-reject': {
+      const d = state.decisions.find((x) => x.id === id);
+      return openModal({
+        title: 'Отклонить решение', submit: 'Отклонить решение',
+        fields: [{ name: 'reason', label: `Почему не подходит «${d.title}»? ИИ учтёт причину в следующий раз.`, type: 'textarea', required: true }],
+        onSubmit: async (v) => { await decide(id, 'reject', v.reason); toast('Решение отклонено'); }
+      });
+    }
+    case 'dec-discuss': {
+      const d = state.decisions.find((x) => x.id === id);
+      return openChat(`Обсудим решение «${d.title}». Ситуация: ${d.situation} Стоит ли это делать и какие есть альтернативы?`);
+    }
+  }
+});
+
+// Поля фильтров (select, input, checkbox) — общий обработчик изменений
+document.addEventListener('change', async (e) => {
+  const el = e.target;
+  if (el.dataset.input) {
+    state.filters[el.dataset.input] = el.type === 'checkbox' ? el.checked : el.value;
+    if (el.dataset.input !== 'articleQuery') render();
+  }
+  if (el.dataset.docStatus) {
+    try { await setDocStatus(el.dataset.docStatus, el.value); toast(`Статус: ${el.value}`); } catch (err) { toast(err.message); }
+  }
+});
+// Фильтр артикулов — по мере ввода, с сохранением позиции курсора
+document.addEventListener('input', (e) => {
+  if (e.target.dataset.input !== 'articleQuery') return;
+  state.filters.articleQuery = e.target.value;
+  const pos = e.target.selectionStart;
+  render();
+  const inp = $('#artQuery'); inp.focus(); inp.setSelectionRange(pos, pos);
+});
+$('#fileInput').addEventListener('change', async (e) => {
+  const files = [...e.target.files];
+  e.target.value = '';
+  try { await uploadFiles(files); if (state.page !== 'documents') location.hash = '#/documents'; } catch (err) { toast(err.message); }
+});
+
+// Перерисовываем графики при смене ширины окна (с задержкой, чтобы не дёргать на каждом пикселе)
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawCharts, 150); });
+window.addEventListener('hashchange', route);
+
+/* =====================================================================
+   СТАРТ
+   Пробуем сервер; если его нет (файл открыт напрямую) — демо-режим.
+   ===================================================================== */
+(async function start() {
+  state.chat = JSON.parse(sessionStorage.getItem('bos_chat') || '[]');
+  if (location.protocol === 'file:') loadDemo();
+  else {
+    try { await loadLive(); }
+    catch (e) { if (e.message === 'Нужно войти') return; console.warn('Сервер недоступен, демо-режим:', e.message); loadDemo(); }
+  }
+  route();
+  // В live-режиме тихо обновляем данные раз в 5 минут
+  if (state.mode === 'live') setInterval(async () => { if (!$('#modal').classList.contains('modal--open')) { try { await loadLive(); render(); } catch { /* сеть */ } } }, 5 * 60000);
+})();
+</script>
+</body>
+</html>

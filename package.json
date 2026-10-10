@@ -1,0 +1,20 @@
+{
+  "name": "brandos",
+  "version": "1.0.0",
+  "description": "BrandOS — дашборд продавца на Wildberries и Ozon",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node scripts/check.js",
+    "test:calc": "node scripts/test-calc.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "imapflow": "^2.4.0",
+    "mailparser": "^3.9.38"
+  }
+}

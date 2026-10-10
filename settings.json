@@ -1,0 +1,29 @@
+{
+  "companyName": "Северный Кот",
+  "ownerName": "Алексей",
+  "team": [
+    { "name": "Алексей", "role": "Владелец" },
+    { "name": "Марина", "role": "Менеджер" },
+    { "name": "Олег", "role": "Склад" },
+    { "name": "Ирина", "role": "Бухгалтер" },
+    { "name": "Дмитрий", "role": "Маркетолог" }
+  ],
+  "revenuePlan": 4000000,
+  "cogsPercent": 38,
+  "cogsByArticle": {},
+  "fixedCostsMonthly": 450000,
+  "payments": [
+    { "name": "Зарплата", "day": 10, "amount": 820000, "kind": "salary" },
+    { "name": "Аванс по зарплате", "day": 25, "amount": 350000, "kind": "salary" },
+    { "name": "Страховые взносы", "day": 28, "amount": 240000, "kind": "tax" },
+    { "name": "НДФЛ", "day": 28, "amount": 120000, "kind": "tax" },
+    { "name": "УСН — авансовый платёж", "day": 28, "amount": 210000, "kind": "tax", "months": [1, 4, 7, 10] }
+  ],
+  "taxRate": 6,
+  "maxDrr": 15,
+  "reorderDays": 14,
+  "minCashReserve": 0,
+  "decisionHour": 8,
+  "syncMinutes": 30,
+  "timezone": "Europe/Moscow"
+}
