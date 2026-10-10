@@ -31,6 +31,7 @@
   --amber: #FFB547;       /* предупреждение */
   --wb: #CB11AB;          /* фирменный цвет Wildberries */
   --ozon: #2F6BFF;        /* фирменный цвет Ozon */
+  --ym: #FFCC00;          /* фирменный цвет Яндекс Маркета (на нём — тёмный текст) */
 
   /* Отступы — сетка 4/8 px (скил spacing) */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
@@ -164,7 +165,8 @@ svg.ico { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: non
 .card { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-6); min-width: 0; }
 .card--link { display: block; color: inherit; transition: border-color .15s; }
 .card--link:hover { border-color: #3D4580; text-decoration: none; }
-.card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+/* flex-wrap: на узкой карточке подпись справа переносится под заголовок, а не налезает на него */
+.card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
 .card__title { font-size: 16px; font-weight: 600; }
 .card__more { font-size: 14px; white-space: nowrap; }
 .card__note { font-size: 13px; color: var(--muted); }
@@ -177,6 +179,7 @@ svg.ico { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: non
 .tag--red { color: var(--red); border-color: rgba(255,93,122,.45); }
 .tag--green { color: var(--green); border-color: rgba(56,217,154,.4); }
 .tag--blue { color: #9DBDFF; border-color: rgba(76,141,255,.45); }
+.tag--amber { color: var(--amber); border-color: rgba(255,181,71,.4); }
 
 .banner { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-4); border-radius: var(--r-md); border: 1px solid rgba(255,181,71,.35); background: rgba(255,181,71,.07); color: var(--text); font-size: 14px; }
 .banner .ico { color: var(--amber); margin-top: 2px; }
@@ -258,19 +261,21 @@ a.row { color: inherit; }
 a.row:hover { text-decoration: none; background: var(--s2); }
 
 .channels { display: grid; gap: var(--sp-4); }
-.channel { display: grid; grid-template-columns: 120px minmax(0, 1fr) 72px 72px; gap: var(--sp-3); align-items: center; font-size: 14px; }
+.channel { display: grid; grid-template-columns: 132px minmax(0, 1fr) 72px 72px; gap: var(--sp-3); align-items: center; font-size: 14px; }
 .channel__head { color: var(--faint); font-size: 12px; }
 .channel .bar { margin: 0; }
 .num { text-align: right; white-space: nowrap; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--sp-4); }
-.stat { display: flex; flex-direction: column; gap: 2px; }
-.stat__val { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat__val { font-size: 22px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stat__label { font-size: 13px; color: var(--muted); }
 .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
-.stats--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* auto-fit вместо жёстких 4 колонок: на среднем экране карточки сами встают 2×2, а не сжимаются */
+.stats--4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 
-.funnel__row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 90px; gap: var(--sp-3); align-items: center; font-size: 13px; padding: 6px 0; }
+.funnel__row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 116px; gap: var(--sp-3); align-items: center; font-size: 13px; padding: 6px 0; }
+.funnel__row .num { white-space: nowrap; }
 .funnel__bar { height: 18px; border-radius: 4px; background: linear-gradient(90deg, var(--blue), #6E8BFF); min-width: 4px; }
 
 .insight { display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) 0; border-top: 1px solid var(--line); color: inherit; }
@@ -288,16 +293,67 @@ a.row:hover { text-decoration: none; background: var(--s2); }
 .quick { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
 .quick .btn { justify-content: flex-start; font-size: 14px; }
 
-/* ===== Таблицы ===== */
+/* ===== Таблицы =====
+   Правило бухгалтерской книги: текст — влево, числа — вправо, цифры одной ширины
+   (tabular-nums), чтобы разряды стояли ровным столбиком. Заголовок колонки выравнивается
+   так же, как её значения. */
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--s1); }
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th, .table td { padding: var(--sp-3) var(--sp-4); text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.table th { font-weight: 500; color: var(--muted); font-size: 13px; background: var(--s1); position: sticky; top: 0; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.table th, .table td { padding: var(--sp-3) var(--sp-4); text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); white-space: nowrap; line-height: 1.4; }
+.table th { font-weight: 500; color: var(--muted); font-size: 13px; background: var(--s1); position: sticky; top: 0; z-index: 2; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover { background: var(--s2); }
-.table td.wrap { white-space: normal; min-width: 220px; }
+.table td.wrap { white-space: normal; min-width: 240px; max-width: 420px; }
+.table td .row__meta { white-space: normal; max-width: 320px; }
 .table .num { text-align: right; }
+.table th.num .th-sort { justify-content: flex-end; width: 100%; }
 .th-sort { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit; display: inline-flex; gap: 4px; align-items: center; min-height: 32px; }
+
+/* ----- Финансовые отчёты (ОПиУ, P&L, ДДС) и РНП -----
+   Первая колонка «прилипает» при горизонтальной прокрутке (sticky) —
+   как закреплённая колонка в Excel: название строки всегда перед глазами. */
+.report th, .report td { text-align: right; }
+.report th:first-child, .report td:first-child { position: sticky; left: 0; z-index: 1; text-align: left; white-space: normal; min-width: 260px; background: var(--s1); box-shadow: 1px 0 0 var(--line); }
+.report thead th:first-child { z-index: 3; }
+/* Заголовки прижаты к низу: месяцы с подписью «по 10.10» и без неё стоят на одной линии */
+.report thead th { vertical-align: bottom; }
+/* Заголовок строки (th scope="row") выглядит как обычная ячейка, но читалки знают, к какой статье число */
+.report tbody th { top: auto; z-index: 1; font-size: 14px; font-weight: 400; color: var(--text); }
+.report tbody tr:hover > * { background: var(--s2); }
+.report__note { display: block; font-size: 12px; font-weight: 400; color: var(--faint); }
+.report .r--head > * { font-weight: 600; }
+.report .r--sub > * { font-weight: 600; border-top: 1px solid #3A4074; }
+.report tr.r--total > * { font-weight: 700; background: #182045; }
+.report .r--detail > * { color: var(--muted); font-size: 13px; padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
+.report .r--detail > :first-child { padding-left: var(--sp-8); }
+.report .r--pct > * { color: var(--muted); font-size: 13px; }
+.report tr.r--section > * { background: var(--s2); font-weight: 600; font-size: 13px; }
+.report .col--total { border-left: 1px solid var(--line); }
+.report .col--weekend { background: rgba(154,107,255,.05); }
+.report tr:hover .col--weekend { background: var(--s2); }
+.cell--good { color: var(--green); }
+.cell--bad { color: var(--red); }
+
+.signals { display: grid; gap: var(--sp-2); }
+.signal { display: flex; gap: var(--sp-3); align-items: flex-start; font-size: 14px; line-height: 1.45; }
+.signal::before { content: ''; flex: none; width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--faint); }
+.signal--bad::before { background: var(--red); }
+.signal--good::before { background: var(--green); }
+.signal--warn::before { background: var(--amber); }
+
+.report__about { max-width: 80ch; margin-bottom: var(--sp-4); line-height: 1.5; }
+.report__foot { margin-top: var(--sp-3); max-width: 90ch; line-height: 1.5; }
+/* В РНП колонки-дни узкие: числа короче, первая колонка не такая широкая */
+.report--rnp th:first-child, .report--rnp td:first-child { min-width: 200px; }
+.report--rnp td, .report--rnp thead th { min-width: 92px; }
+.toolbar__sep { width: 1px; align-self: stretch; margin: 4px var(--sp-2); background: var(--line); }
+.modal__note { line-height: 1.5; }
+/* Карточка внутри карточки — чуть светлее фона, чтобы читалась вложенность */
+.card--inner { background: var(--s2); box-shadow: none; }
+.templates { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-4); }
+.template { display: flex; flex-direction: column; gap: var(--sp-3); }
+.template__title { font-weight: 600; }
+.template__text { font-size: 14px; color: var(--muted); flex: 1; }
 .th-sort:hover { color: var(--text); }
 .good { color: var(--green); }
 .bad { color: var(--red); }
@@ -403,6 +459,12 @@ a.row:hover { text-decoration: none; background: var(--s2); }
 .scrim { position: fixed; inset: 0; z-index: 25; background: rgba(4,5,14,.6); display: none; }
 .scrim--on { display: block; }
 
+/* Предпросмотр документа: на весь экран, сверху панель действий, ниже — сам лист */
+.docview { position: fixed; inset: 0; z-index: 55; display: grid; grid-template-rows: auto minmax(0, 1fr); background: rgba(4,5,14,.85); }
+.docview__bar { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); background: var(--s1); border-bottom: 1px solid var(--line); }
+.docview__title { font-size: 15px; }
+.docview__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.docview__frame { width: 100%; height: 100%; border: 0; background: #EEF0F4; }
 .toast { position: fixed; left: 50%; bottom: var(--sp-6); transform: translateX(-50%); z-index: 60; background: var(--s3); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); font-size: 14px; max-width: calc(100% - 32px); opacity: 0; pointer-events: none; transition: opacity .2s; }
 .toast--on { opacity: 1; }
 
@@ -436,7 +498,8 @@ a.row:hover { text-decoration: none; background: var(--s2); }
   .page { padding: var(--sp-4); gap: var(--sp-4); }
   .page__title { font-size: 24px; }
   .card { padding: var(--sp-4); }
-  .kpis, .stats--4 { grid-template-columns: minmax(0, 1fr); }
+  /* .stats--4 сюда не входит: auto-fit сам даст 1 колонку на телефоне и 2 на узком планшете */
+  .kpis { grid-template-columns: minmax(0, 1fr); }
   .kpi__value { font-size: 24px; }
   .channel { grid-template-columns: 90px minmax(0, 1fr) 60px 56px; gap: var(--sp-2); font-size: 13px; }
   .cards, .home__side { grid-template-columns: minmax(0, 1fr); }
@@ -447,7 +510,13 @@ a.row:hover { text-decoration: none; background: var(--s2); }
   .decision__actions { grid-template-columns: minmax(0, 1fr); }
   .modal { padding: 0; place-items: end stretch; }
   .modal__box { max-width: none; max-height: 92vh; border-radius: var(--r-lg) var(--r-lg) 0 0; }
-  .funnel__row { grid-template-columns: 90px minmax(0, 1fr) 76px; }
+  .funnel__row { grid-template-columns: 92px minmax(0, 1fr) 116px; gap: var(--sp-2); }
+  /* Отчёты на телефоне: закреплённая колонка уже, числа — мельче, остальное листается вбок */
+  .report th:first-child, .report td:first-child { min-width: 150px; max-width: 170px; }
+  .report th, .report td { padding: var(--sp-2) var(--sp-3); font-size: 13px; }
+  .report .r--detail > :first-child { padding-left: var(--sp-4); }
+  .report tbody th { font-size: 13px; }
+  .table td.wrap { min-width: 200px; }
 }
 
 /* Уважаем системную настройку «уменьшить движение» */
@@ -483,6 +552,9 @@ a.row:hover { text-decoration: none; background: var(--s2); }
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></symbol>
+  <symbol id="i-report" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></symbol>
 </svg>
 
@@ -598,10 +670,210 @@ const dm = (iso) => (iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}` : '');
 const daysBetween = (iso) => Math.round((new Date(iso + 'T00:00:00') - new Date(localIso() + 'T00:00:00')) / 86400000);
 const icon = (id) => `<svg class="ico" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 const uidLocal = (p) => `${p}_${Math.random().toString(36).slice(2, 10)}`;
+// Короткое и полное имя площадки: короткое — в таблицах, полное — в заголовках
+const MP = { wb: ['WB', 'Wildberries', 'var(--wb)'], ozon: ['Ozon', 'Ozon', 'var(--ozon)'], ym: ['ЯМ', 'Яндекс Маркет', 'var(--ym)'] };
+const mpName = (mp) => MP[mp]?.[0] || mp;
+const mpFull = (mp) => MP[mp]?.[1] || mp;
 const LS = {
   get(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* приватный режим — не страшно */ } }
 };
+
+// Демо: какая доля выручки доходит до продавца после удержаний площадки
+const DEMO_PAY = { wb: 0.69, ozon: 0.66, ym: 0.74 };
+const MONTHS_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+/* Демо-отчёты (ОПиУ, P&L по каналам, ДДС, РНП, налоги) в той же структуре, что отдаёт сервер:
+   { columns: [{ key, label, note }], rows: [{ key, label, type, values }] }.
+   Так одна и та же функция отрисовки работает и с примером, и с реальными данными. */
+function buildDemoReports(daily, { cashNow, fixed, cogsPct, ads }) {
+  const now = new Date();
+  const CH = [['wb', 'Wildberries'], ['ozon', 'Ozon'], ['ym', 'Яндекс Маркет']];
+  // Строка отчёта — как row() на сервере: проценты с одним знаком, рубли целыми
+  const row = (key, label, type, values) => ({ key, label, type, values: values.map((v) => (v == null ? null : type === 'pct' ? +v.toFixed(1) : Math.round(v))) });
+  const pctOf = (a, b) => (b ? (a / b) * 100 : 0);
+  const tax6 = (r) => r * 0.06;
+
+  // ----- ОПиУ: два полных месяца и текущий «по сегодня» -----
+  const months = [-2, -1, 0].map((k, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + k, 1);
+    const inMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const share = k === 0 ? now.getDate() / inMonth : 1;
+    return { label: `${MONTHS_RU[d.getMonth()]} ${d.getFullYear()}`, note: k === 0 ? `по ${dm(localIso())}` : '', share, days: Math.round(share * inMonth), trend: [0.93, 1, 1.06][i] };
+  });
+  const opCol = (m) => {
+    const revenue = 4300000 * m.share * m.trend;
+    const byCh = { wb: revenue * 0.6, ozon: revenue * 0.31, ym: revenue * 0.09 };
+    const payout = sum(CH, ([k]) => byCh[k] * DEMO_PAY[k]);
+    const cogs = revenue * cogsPct, adSpend = 183000 * m.share * m.trend, fx = fixed * m.share;
+    const ebt = payout - cogs - adSpend - fx, tax = tax6(revenue);
+    return { revenue, byCh, payout, cogs, ads: adSpend, fixed: fx, gross: payout - cogs, ebt, tax, net: ebt - tax };
+  };
+  const cols = months.map(opCol);
+  // Колонка «Итого» — сумма месяцев по каждому полю
+  const total = { byCh: {} };
+  for (const k of ['revenue', 'payout', 'cogs', 'ads', 'fixed', 'gross', 'ebt', 'tax', 'net']) total[k] = sum(cols, (c) => c[k]);
+  for (const [k] of CH) total.byCh[k] = sum(cols, (c) => c.byCh[k]);
+  const all = [...cols, total];
+  const v = (f) => all.map(f);
+  const FIXED_ITEMS = [['Аренда мастерской', 180000], ['Зарплата офиса и склада', 220000], ['Сервисы, связь, бухгалтерия', 50000]];
+  const opiu = {
+    columns: [...months.map((m, i) => ({ key: `m${i}`, label: m.label, note: m.note })), { key: 'total', label: 'Итого', note: `${sum(months, (m) => m.days)} дн.` }],
+    rows: [
+      row('revenue', 'Выручка', 'head', v((c) => c.revenue)),
+      ...CH.map(([k, name]) => row(`rev_${k}`, name, 'detail', v((c) => c.byCh[k]))),
+      row('mp', 'Комиссии, логистика и услуги маркетплейсов', 'item', v((c) => -(c.revenue - c.payout))),
+      row('payout', 'Выплаты маркетплейсов', 'sub', v((c) => c.payout)),
+      row('cogs', 'Себестоимость проданного товара', 'item', v((c) => -c.cogs)),
+      row('gross', 'Валовая прибыль', 'sub', v((c) => c.gross)),
+      row('ads', 'Реклама на маркетплейсах', 'item', v((c) => -c.ads)),
+      row('fixed', 'Постоянные расходы', 'item', v((c) => -c.fixed)),
+      ...FIXED_ITEMS.map(([name, amount], i) => row(`fixed${i}`, name, 'detail', v((c) => (-c.fixed * amount) / fixed))),
+      row('ebt', 'Прибыль до налога (как на главной)', 'sub', v((c) => c.ebt)),
+      row('tax', 'Налог УСН (доходы, 6%)', 'item', v((c) => -c.tax)),
+      row('net', 'Чистая прибыль', 'total', v((c) => c.net)),
+      row('margin', 'Рентабельность по чистой прибыли', 'pct', v((c) => pctOf(c.net, c.revenue))),
+      row('grossMargin', 'Валовая маржа', 'pct', v((c) => pctOf(c.gross, c.revenue)))
+    ],
+    note: 'Пример. В рабочем режиме выручка и выплаты берутся из кабинетов маркетплейсов, реклама — из рекламных кабинетов.'
+  };
+
+  // ----- P&L по каналам за 30 дней (итог «Прибыль до налога» = прибыль на главной) -----
+  const revAll = sum(daily, (d) => d.wb + d.ozon + d.ym);
+  const chCol = ([k]) => {
+    const revenue = sum(daily, (d) => d[k]);
+    const payout = revenue * DEMO_PAY[k], cogs = revenue * cogsPct, adSpend = ads[k];
+    const contribution = payout - cogs - adSpend, fx = (fixed * revenue) / revAll, ebt = contribution - fx, tax = tax6(revenue);
+    return { revenue, payout, cogs, ads: adSpend, contribution, fixed: fx, ebt, tax, net: ebt - tax };
+  };
+  const pc = CH.map(chCol);
+  const pt = {};
+  for (const k of Object.keys(pc[0])) pt[k] = sum(pc, (c) => c[k]);
+  const pAll = [...pc, pt];
+  const pv = (f) => pAll.map(f);
+  const pnl = {
+    columns: [...CH.map(([key, label]) => ({ key, label })), { key: 'total', label: 'Итого', note: '30 дней' }],
+    rows: [
+      row('revenue', 'Выручка', 'head', pv((c) => c.revenue)),
+      row('share', 'Доля в выручке', 'pct', pv((c) => pctOf(c.revenue, pt.revenue))),
+      row('mp', 'Удержания маркетплейса', 'item', pv((c) => -(c.revenue - c.payout))),
+      row('payout', 'Выплаты', 'sub', pv((c) => c.payout)),
+      row('cogs', 'Себестоимость', 'item', pv((c) => -c.cogs)),
+      row('ads', 'Реклама', 'item', pv((c) => -c.ads)),
+      row('drr', 'ДРР (реклама к выручке)', 'pct', pv((c) => pctOf(c.ads, c.revenue))),
+      row('contribution', 'Маржинальный доход канала', 'sub', pv((c) => c.contribution)),
+      row('fixed', 'Постоянные расходы (по доле выручки)', 'item', pv((c) => -c.fixed)),
+      row('ebt', 'Прибыль до налога', 'sub', pv((c) => c.ebt)),
+      row('tax', 'Налог УСН', 'item', pv((c) => -c.tax)),
+      row('net', 'Чистая прибыль', 'total', pv((c) => c.net)),
+      row('margin', 'Рентабельность', 'pct', pv((c) => pctOf(c.net, c.revenue)))
+    ],
+    note: 'Маржинальный доход — сколько канал оставляет после своих прямых расходов. Постоянные расходы делятся между каналами пропорционально выручке.'
+  };
+
+  // ----- ДДС: остаток на конец текущего месяца = «Деньги на счетах» на главной -----
+  const ddsCol = (m, i, c) => {
+    const s = m.share;
+    const by = {
+      mp_in: c.payout * 0.96, cust_in: 150000 * s, other_in: 12000 * s,
+      tax: -360000 * s, salary: -560000 * s, rent: -180000 * s, ads: -c.ads * 0.4, bank: -6500 * s,
+      logistics: -45000 * s, supplier: -c.cogs * [1.02, 1.12, 0.95][i],
+      capex: i === 1 ? -95000 : 0, owner_out: i < 2 ? -150000 : 0
+    };
+    const keysOf = (sec, dir) => DDS_DEMO.filter((x) => x[2] === sec && (!dir || x[3] === dir)).map((x) => x[0]);
+    const s2 = (keys) => sum(keys, (k) => by[k] || 0);
+    return { by, opIn: s2(keysOf('op', 'in')), opOut: s2(keysOf('op', 'out')), op: s2(keysOf('op')), inv: s2(keysOf('inv')), fin: s2(keysOf('fin')) };
+  };
+  const dc = months.map((m, i) => ddsCol(m, i, cols[i]));
+  dc.forEach((c) => { c.net = c.op + c.inv + c.fin; });
+  // Остатки считаем «с конца»: знаем сегодняшний остаток и вычитаем потоки месяцев назад
+  let close = cashNow;
+  for (let i = dc.length - 1; i >= 0; i--) { dc[i].close = close; dc[i].open = close - dc[i].net; close = dc[i].open; }
+  const dt = { by: {}, open: dc[0].open, close: dc.at(-1).close };
+  for (const k of ['opIn', 'opOut', 'op', 'inv', 'fin', 'net']) dt[k] = sum(dc, (c) => c[k]);
+  for (const [k] of DDS_DEMO) dt.by[k] = sum(dc, (c) => c.by[k] || 0);
+  const dAll = [...dc, dt];
+  const dv = (f) => dAll.map(f);
+  const items = (sec, dir) => DDS_DEMO.filter((x) => x[2] === sec && (!dir || x[3] === dir) && dAll.some((c) => c.by[x[0]]))
+    .map(([k, label]) => row(k, label, 'detail', dv((c) => c.by[k] || 0)));
+  const dds = {
+    columns: opiu.columns,
+    rows: [
+      row('open', 'Остаток на начало периода', 'head', dv((c) => c.open)),
+      row('s_op', 'Операционная деятельность', 'section', dv(() => null)),
+      row('opIn', 'Поступления', 'item', dv((c) => c.opIn)), ...items('op', 'in'),
+      row('opOut', 'Платежи', 'item', dv((c) => c.opOut)), ...items('op', 'out'),
+      row('op', 'Сальдо операционной деятельности', 'sub', dv((c) => c.op)),
+      row('s_inv', 'Инвестиционная деятельность', 'section', dv(() => null)), ...items('inv'),
+      row('inv', 'Сальдо инвестиционной деятельности', 'sub', dv((c) => c.inv)),
+      row('s_fin', 'Финансовая деятельность', 'section', dv(() => null)), ...items('fin'),
+      row('fin', 'Сальдо финансовой деятельности', 'sub', dv((c) => c.fin)),
+      row('net', 'Чистый денежный поток', 'total', dv((c) => c.net)),
+      row('close', 'Остаток на конец периода', 'head', dv((c) => c.close))
+    ],
+    unknown: 0,
+    note: 'Пример. В рабочем режиме статьи определяются по контрагенту и назначению платежа из выписки банка.'
+  };
+
+  // ----- РНП: по каждому дню и каналу -----
+  const AVG = { wb: 1850, ozon: 2100, ym: 1650 };
+  const rnp = {
+    days: daily.map((d, i) => {
+      const out = { date: d.date };
+      CH.forEach(([k], j) => {
+        const wave = 1 + 0.08 * Math.sin(i * 1.7 + j);
+        const ordersSum = d[k] * 1.12 * wave;
+        const orders = Math.round(ordersSum / AVG[k]);
+        out[k] = {
+          orders, ordersSum: Math.round(ordersSum), sales: d[k], payout: Math.round(d[k] * DEMO_PAY[k]), cogs: Math.round(d[k] * cogsPct),
+          ads: Math.round((ads[k] / 30) * (1 + 0.25 * Math.cos(i / 2 + j))), returns: Math.max(0, Math.round(orders * 0.035 * wave + (i % 5 === j ? 2 : 0) - 1))
+        };
+      });
+      return out;
+    }),
+    channels: CH.map(([k]) => k),
+    planPerDay: Math.round(4000000 / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()),
+    maxDrr: 15,
+    fixedPerDay: Math.round(fixed / 30)
+  };
+
+  // ----- Налоги: прошедшие кварталы целиком, текущий — частично -----
+  const year = now.getFullYear();
+  const curQ = Math.floor(now.getMonth() / 3) + 1;
+  const qStart = (q) => new Date(year, (q - 1) * 3, 1);
+  const quarters = [1, 2, 3, 4].map((q) => {
+    const totalDays = q < curQ ? Math.round((qStart(q + 1) - qStart(q)) / 86400000) : q === curQ ? Math.round((new Date(year, now.getMonth(), now.getDate()) - qStart(q)) / 86400000) + 1 : 0;
+    const full = [11850000, 12420000, 12960000, 13300000][q - 1];
+    const share = q < curQ ? 1 : q === curQ ? totalDays / Math.round((qStart(q + 1) - qStart(q)) / 86400000) : 0;
+    const income = Math.round(full * share);
+    return {
+      q, income, expense: Math.round(income * 0.86), contributions: q < curQ ? 180000 : 0, mpAdjust: Math.round(income * 0.32),
+      days: totalDays, totalDays, source: q > curQ ? 'none' : q === curQ ? 'partial' : 'data', future: q > curQ
+    };
+  });
+  const qFrom = localIso(qStart(curQ));
+  const incomeOps = [
+    [0, 612400, 'ООО «Вайлдберриз»', 'Перечисление по отчёту о реализации', true],
+    [-3, 389600, 'ООО «Интернет Решения»', 'Выплата Ozon за период', true],
+    [-5, 117300, 'ООО «Яндекс»', 'Выплата Яндекс Маркета по договору', true],
+    [-7, 82000, 'ООО «Хвост»', 'Оплата по счёту 117', false],
+    [-8, 598200, 'ООО «Вайлдберриз»', 'Перечисление по отчёту о реализации', true]
+  ].map(([d, amount, party, purpose, mp]) => ({ date: addDays(d), amount, party, purpose, mp })).filter((o) => o.date >= qFrom).reverse();
+  const tax = {
+    year, rate: 6, taxObject: 'income',
+    taxpayer: { kind: 'ИП', name: 'Иванов Алексей Петрович', inn: '771234567890', kpp: '', oktmo: '45380000', ifns: '7701', phone: '+7 900 000-00-00', hasEmployees: true },
+    quarters, incomeOps, coverageFrom: addDays(-59)
+  };
+
+  return { opiu, pnl, dds, rnp, tax };
+}
+// Статьи ДДС для примера: [ключ, название, раздел, направление] — порядок как в отчёте сервера
+const DDS_DEMO = [
+  ['mp_in', 'Выплаты маркетплейсов', 'op', 'in'], ['cust_in', 'Оплаты от покупателей', 'op', 'in'], ['other_in', 'Прочие поступления', 'op', 'in'],
+  ['tax', 'Налоги и взносы', 'op', 'out'], ['salary', 'Зарплата', 'op', 'out'], ['rent', 'Аренда', 'op', 'out'], ['ads', 'Реклама и продвижение', 'op', 'out'],
+  ['bank', 'Банковские комиссии', 'op', 'out'], ['logistics', 'Доставка и логистика', 'op', 'out'], ['supplier', 'Поставщики: товар и материалы', 'op', 'out'],
+  ['capex', 'Оборудование и основные средства', 'inv', 'out'], ['owner_out', 'Выплаты собственнику', 'fin', 'out']
+];
 
 /* =====================================================================
    ДЕМО-ДАННЫЕ — всё в одном объекте, чтобы потом подставить реальные.
@@ -617,13 +889,17 @@ function buildDemo() {
   const daily = days30.map((date, i) => ({
     date,
     wb: Math.round(84000 + 14000 * Math.sin(i / 3) + rnd() * 16000),
-    ozon: Math.round(47000 + 9000 * Math.cos(i / 4) + rnd() * 11000)
+    ozon: Math.round(47000 + 9000 * Math.cos(i / 4) + rnd() * 11000),
+    ym: Math.round(15000 + 4000 * Math.sin(i / 5) + rnd() * 5000)
   }));
-  const revenue = sum(daily, (d) => d.wb + d.ozon);
+  const dayRev = (d) => d.wb + d.ozon + d.ym;
+  const revenue = sum(daily, dayRev);
   const revenuePrev = Math.round(revenue / 1.118);
-  const cogsPct = 0.38, payoutRatio = 0.68, fixed = 450000;
+  const cogsPct = 0.38, fixed = 450000;
   const ads = 183000;
-  const payout = revenue * payoutRatio;
+  // Доля выручки, которая доходит до нас после комиссий и логистики, — у каждой площадки своя
+  const payout = sum(daily, (d) => d.wb * DEMO_PAY.wb + d.ozon * DEMO_PAY.ozon + d.ym * DEMO_PAY.ym);
+  const payoutRatio = payout / revenue;
   const profit = payout - revenue * cogsPct - fixed - ads;
   const profitPrev = revenuePrev * payoutRatio - revenuePrev * cogsPct - fixed - ads * 0.92;
   const margin = (profit / revenue) * 100;
@@ -668,7 +944,9 @@ function buildDemo() {
     ['SK-107', 'Лежанка на батарею', 'ozon', 1290, 230, 25, 0, 8700, 18.0, 0.66],
     ['SK-108', 'Домик-куб с лежанкой', 'wb', 3590, 96, 210, 0, 17200, -1.5, 0.69],
     ['SK-109', 'Ступеньки для собак', 'ozon', 3290, 64, 150, 0, 22800, -9.8, 0.67],
-    ['SK-110', 'Тоннель шуршащий', 'wb', 1190, 150, 520, 0, 39500, -12.0, 0.56]
+    ['SK-110', 'Тоннель шуршащий', 'wb', 1190, 150, 520, 0, 39500, -12.0, 0.56],
+    ['SK-111', 'Лежанка-корзина плетёная', 'ym', 2790, 96, 140, 0, 0, 6.3, 0.74],
+    ['SK-112', 'Когтеточка-доска настенная', 'ym', 890, 210, 48, 0, 0, 14.1, 0.71]
   ];
   const articles = P.map(([article, name, mp, price, sold, stock, inWay, adSpend, trend7, pr]) => {
     const rev = price * sold;
@@ -754,10 +1032,10 @@ function buildDemo() {
       id: `dec_demo_${a.article}`, key: `stock:${a.mp}:${a.article}`, area: 'склад', status: 'new', source: 'rules',
       urgency: a.days < 5 ? 'критично' : a.days < 10 ? 'сегодня' : 'на неделе',
       title: `Дозаказать арт. ${a.article} — ${need} шт`,
-      situation: `${a.mp === 'wb' ? 'WB' : 'Ozon'}: остаток ${a.stock} шт, продаётся ${a.perDay} шт/день — хватит на ${a.days} дн. Порог — 14 дн.`,
+      situation: `${mpFull(a.mp)}: остаток ${a.stock} шт, продаётся ${a.perDay} шт/день — хватит на ${a.days} дн. Порог — 14 дн.`,
       action: `Заказать ${need} шт, чтобы закрыть ~45 дней продаж.`,
       why: 'Если товар закончится, карточка теряет позиции в поиске.',
-      steps: [`Согласовать с поставщиком ${need} шт арт. ${a.article}`, 'Оплатить закупку', `Создать поставку на склад ${a.mp === 'wb' ? 'WB' : 'Ozon'}`],
+      steps: [`Согласовать с поставщиком ${need} шт арт. ${a.article}`, 'Оплатить закупку', `Создать поставку на склад ${mpFull(a.mp)}`],
       effect: Math.round((a.profit / a.sold) * a.perDay * Math.max(0, 23 - a.days)), due: addDays(a.days < 5 ? 0 : 2), confidence: 80,
       metric: `Остаток арт. ${a.article} в днях ≥ 14`, taskIds: []
     });
@@ -795,26 +1073,27 @@ function buildDemo() {
   return {
     company: 'Северный Кот', owner: 'Алексей',
     team: [{ name: 'Алексей', role: 'Владелец' }, { name: 'Марина', role: 'Менеджер' }, { name: 'Олег', role: 'Склад' }, { name: 'Ирина', role: 'Бухгалтер' }, { name: 'Дмитрий', role: 'Маркетолог' }],
-    sources: { wb: true, ozon: true, bank: true, crm: true },
+    sources: { wb: true, ozon: true, ym: true, bank: true, crm: true },
     lastSync: null, demo: [], estimated: [],
     kpi: {
-      revenue: { value: revenue, prev: revenuePrev, delta: ((revenue - revenuePrev) / revenuePrev) * 100, spark: daily.slice(-14).map((d) => d.wb + d.ozon) },
-      profit: { value: Math.round(profit), prev: Math.round(profitPrev), delta: ((profit - profitPrev) / Math.abs(profitPrev)) * 100, spark: daily.slice(-14).map((d) => (d.wb + d.ozon) * 0.12 + rnd() * 9000) },
+      revenue: { value: revenue, prev: revenuePrev, delta: ((revenue - revenuePrev) / revenuePrev) * 100, spark: daily.slice(-14).map(dayRev) },
+      profit: { value: Math.round(profit), prev: Math.round(profitPrev), delta: ((profit - profitPrev) / Math.abs(profitPrev)) * 100, spark: daily.slice(-14).map((d) => dayRev(d) * 0.12 + rnd() * 9000) },
       margin: { value: +margin.toFixed(1), prev: +marginPrev.toFixed(1), delta: +(margin - marginPrev).toFixed(1), unit: 'pp', spark: daily.slice(-14).map(() => margin - 2 + rnd() * 4) },
       cash: { value: cashNow, prev: 812000, delta: ((cashNow - 812000) / 812000) * 100, spark: cf.slice(0, 14).map((d) => d.fact) }
     },
-    plan: (() => { const now = new Date(); const day = now.getDate(); const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); const fact = sum(daily.slice(-day), (d) => d.wb + d.ozon); return { plan: 4000000, fact, day, days, forecast: Math.round((fact / day) * days), pct: +((fact / 4000000) * 100).toFixed(1) }; })(),
+    plan: (() => { const now = new Date(); const day = now.getDate(); const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); const fact = sum(daily.slice(-day), dayRev); return { plan: 4000000, fact, day, days, forecast: Math.round((fact / day) * days), pct: +((fact / 4000000) * 100).toFixed(1) }; })(),
     cashflow: { days: cf, gap, start: cashNow, end: Math.round(bal), inflow, outflow, minCash: 0 },
     channels: [
       { key: 'wb', name: 'Wildberries', revenue: sum(daily, (d) => d.wb), margin: 14.2, drr: 6.8 },
       { key: 'ozon', name: 'Ozon', revenue: sum(daily, (d) => d.ozon), margin: 11.5, drr: 8.9 },
+      { key: 'ym', name: 'Яндекс Маркет', revenue: sum(daily, (d) => d.ym), margin: 19.8, drr: 0 },
       { key: 'site', name: 'Сайт', revenue: 312000, margin: 24.0, drr: 3.1 }
     ],
     payments,
-    receivables: { total: 1084000, items: [{ name: 'Wildberries', amount: 612400, note: 'выплата за текущую неделю' }, { name: 'Ozon', amount: 389600, note: 'за текущий расчётный период' }, { name: 'Сеть «Четыре лапы»', amount: 82000, note: 'постоплата по счёту №118' }] },
+    receivables: { total: 1201300, items: [{ name: 'Wildberries', amount: 612400, note: 'выплата за текущую неделю' }, { name: 'Ozon', amount: 389600, note: 'за текущий расчётный период' }, { name: 'Яндекс Маркет', amount: 117300, note: 'по графику выплат Маркета' }, { name: 'Сеть «Четыре лапы»', amount: 82000, note: 'постоплата по счёту №118' }] },
     sales: {
-      today: daily[29].wb + daily[29].ozon, yesterday: daily[28].wb + daily[28].ozon,
-      week: sum(daily.slice(-7), (d) => d.wb + d.ozon), weekPrev: sum(daily.slice(-14, -7), (d) => d.wb + d.ozon),
+      today: dayRev(daily[29]), yesterday: dayRev(daily[28]),
+      week: sum(daily.slice(-7), dayRev), weekPrev: sum(daily.slice(-14, -7), dayRev),
       orders7: 418, returns7: 17, returnsPct: 4.1, daily
     },
     supplies: [
@@ -822,15 +1101,17 @@ function buildDemo() {
       { id: 'OZ-55018', mp: 'ozon', warehouse: 'Хоругвино', date: addDays(4), qty: 180, status: 'В пути' },
       { id: 'WB-77098', mp: 'wb', warehouse: 'Казань', date: addDays(-1), qty: 120, status: 'Принята' },
       { id: 'OZ-54990', mp: 'ozon', warehouse: 'Санкт-Петербург', date: addDays(9), qty: 300, status: 'Запланирована' },
-      { id: 'WB-77140', mp: 'wb', warehouse: 'Электросталь', date: addDays(12), qty: 160, status: 'Запланирована' }
+      { id: 'WB-77140', mp: 'wb', warehouse: 'Электросталь', date: addDays(12), qty: 160, status: 'Запланирована' },
+      { id: 'YM-30412', mp: 'ym', warehouse: 'Софьино', date: addDays(5), qty: 90, status: 'Собирается' }
     ],
     stock: { items: stockItems, total: sum(stockItems, (x) => x.qty), low: stockItems.filter((x) => x.days < 14).length, reorderDays: 14 },
     ads: { spend: ads, ordersSum: sum(campaigns, (c) => c.ordersSum), drr: +((ads / revenue) * 100).toFixed(1), maxDrr: 15, campaigns },
     traffic: { sources: [{ name: 'VK Реклама', visits: 4820, orders: 96 }, { name: 'Telegram-каналы', visits: 2310, orders: 71 }, { name: 'Блогеры', visits: 3650, orders: 58 }, { name: 'Яндекс Директ', visits: 1980, orders: 33 }] },
     marketplaces: {
-      wb: { connected: true, revenue: sum(daily, (d) => d.wb), revenuePrev: Math.round(sum(daily, (d) => d.wb) / 1.12), payout: Math.round(sum(daily, (d) => d.wb) * 0.69), ads: 152000, drr: 6.8, stockQty: 2319, skus: 6, returns: 61 },
-      ozon: { connected: true, revenue: sum(daily, (d) => d.ozon), revenuePrev: Math.round(sum(daily, (d) => d.ozon) / 1.11), payout: Math.round(sum(daily, (d) => d.ozon) * 0.66), ads: 31000, drr: 8.9, stockQty: 965, skus: 4, returns: null,
-        finance: { accruals: Math.round(sum(daily, (d) => d.ozon) * 0.98), commission: -Math.round(sum(daily, (d) => d.ozon) * 0.19), logistics: -Math.round(sum(daily, (d) => d.ozon) * 0.1), refunds: -Math.round(sum(daily, (d) => d.ozon) * 0.02), services: -Math.round(sum(daily, (d) => d.ozon) * 0.01), compensation: 4200, others: 0 } }
+      wb: { connected: true, revenue: sum(daily, (d) => d.wb), revenuePrev: Math.round(sum(daily, (d) => d.wb) / 1.12), payout: Math.round(sum(daily, (d) => d.wb) * DEMO_PAY.wb), ads: 152000, drr: 6.8, stockQty: 2319, skus: 6, returns: 61 },
+      ozon: { connected: true, revenue: sum(daily, (d) => d.ozon), revenuePrev: Math.round(sum(daily, (d) => d.ozon) / 1.11), payout: Math.round(sum(daily, (d) => d.ozon) * DEMO_PAY.ozon), ads: 31000, drr: 8.9, stockQty: 965, skus: 4, returns: null,
+        finance: { accruals: Math.round(sum(daily, (d) => d.ozon) * 0.98), commission: -Math.round(sum(daily, (d) => d.ozon) * 0.19), logistics: -Math.round(sum(daily, (d) => d.ozon) * 0.1), refunds: -Math.round(sum(daily, (d) => d.ozon) * 0.02), services: -Math.round(sum(daily, (d) => d.ozon) * 0.01), compensation: 4200, others: 0 } },
+      ym: { connected: true, revenue: sum(daily, (d) => d.ym), revenuePrev: Math.round(sum(daily, (d) => d.ym) / 1.09), payout: Math.round(sum(daily, (d) => d.ym) * DEMO_PAY.ym), ads: 0, drr: 0, stockQty: 188, skus: 2, returns: 9 }
     },
     finance: { revenue, mpCosts: Math.round(revenue - payout), payout: Math.round(payout), cogs: Math.round(revenue * cogsPct), fixed, ads, profit: Math.round(profit), margin: +margin.toFixed(1) },
     bank: {
@@ -846,7 +1127,8 @@ function buildDemo() {
         [-7, 82000, 'ООО «Хвост»', 'Оплата по счёту 117']
       ].map(([d, amount, party, purpose]) => ({ date: addDays(d), amount, party, purpose, bank: 'Т-Банк' }))
     },
-    settings: { maxDrr: 15, reorderDays: 14, revenuePlan: 4000000, cogsPercent: 38, fixedCostsMonthly: fixed, decisionHour: 8, syncMinutes: 30, taxRate: 6 },
+    settings: { maxDrr: 15, reorderDays: 14, revenuePlan: 4000000, cogsPercent: 38, fixedCostsMonthly: fixed, decisionHour: 8, syncMinutes: 30, taxRate: 6, taxObject: 'income' },
+    ...buildDemoReports(daily, { cashNow, fixed, cogsPct, ads: { wb: 152000, ozon: 31000, ym: 0 } }),
     crm: { provider: 'demo', stages: STAGES, deals },
     tasks, documents, decisions,
     analytics: { articles, campaigns, maxDrr: 15 },
@@ -860,6 +1142,8 @@ const DEMO = buildDemo();
 const INTEG_META = {
   wb: { lg: 'WB', bg: 'var(--wb)', desc: 'Продажи, заказы, остатки и возвраты за 60 дней' },
   ozon: { lg: 'Oz', bg: 'var(--ozon)', desc: 'Выручка по дням, комиссии, логистика, к выплате, остатки' },
+  // fg — цвет букв: на жёлтом фоне Маркета белый текст не читается
+  ym: { lg: 'ЯМ', bg: 'var(--ym)', fg: '#1A1A1A', desc: 'Заказы, выручка, комиссии и остатки за 60 дней (Partner API)' },
   wbads: { lg: 'WB', bg: '#8A1677', desc: 'Реклама WB: расход, показы, клики, заказы по кампаниям' },
   ozonperf: { lg: 'OP', bg: '#1C47B8', desc: 'Реклама Ozon: расход, заказы, ДРР по кампаниям' },
   amocrm: { lg: 'amo', bg: '#2F80ED', desc: 'Воронка и сделки, перенос этапа пишется обратно' },
@@ -875,8 +1159,8 @@ const INTEG_META = {
 
 // Пункты меню: [ключ, название, иконка]. Каждый пункт ведёт на свою страницу.
 const MENU = [
-  ['home', 'Главная', 'home'], ['decisions', 'Центр решений', 'target'], ['analytics', 'Аналитика', 'chart'],
-  ['finance', 'Финансы', 'wallet'], ['sales', 'Продажи', 'cart'], ['marketplaces', 'Маркетплейсы', 'store'],
+  ['home', 'Главная', 'home'], ['decisions', 'Центр решений', 'target'], ['rnp', 'РНП', 'pulse'], ['analytics', 'Аналитика', 'chart'],
+  ['finance', 'Финансы', 'wallet'], ['reports', 'ОПиУ, P&L и ДДС', 'report'], ['sales', 'Продажи', 'cart'], ['marketplaces', 'Маркетплейсы', 'store'],
   ['ads', 'Реклама', 'mega'], ['crm', 'CRM', 'users'], ['stock', 'Склад', 'box'], ['supplies', 'Поставки', 'truck'],
   ['taxes', 'Налоги', 'receipt'], ['documents', 'Документы', 'file'], ['integrations', 'Интеграции', 'plug'], ['tasks', 'Задачи', 'tasks']
 ];
@@ -891,7 +1175,7 @@ const state = {
   tasks: [], crm: null, documents: [], decisions: [], decMeta: {}, analytics: DEMO.analytics, integrations: [],
   ai: false,
   chat: [],
-  filters: { docSource: 'Все', docStatus: 'Все', taskAssignee: 'Все', taskPriority: 'Все', taskAI: false, decTab: 'new', articleQuery: '' },
+  filters: { docSource: 'Все', docStatus: 'Все', taskAssignee: 'Все', taskPriority: 'Все', taskAI: false, decTab: 'new', articleQuery: '', repTab: 'opiu', rnpCh: 'all', rnpDays: 14 },
   sort: { articles: { key: 'revenue', dir: -1 }, campaigns: { key: 'spend', dir: -1 } },
   introDone: false
 };
@@ -1177,11 +1461,13 @@ function cashSvg(cf, W, H) {
   };
 }
 
-// Продажи по дням: столбики WB + Ozon друг на друге
+// Продажи по дням: столбики WB, Ozon и Маркета стопкой — как кирпичи друг на друге
+const SALES_SERIES = [['wb', 'WB', 'var(--violet)'], ['ozon', 'Ozon', 'var(--blue)'], ['ym', 'ЯМ', 'var(--ym)']];
+const dayTotal = (d) => sum(SALES_SERIES, ([k]) => d[k] || 0);
 function salesSvg(daily, W, H) {
   const pad = { l: 56, r: 8, t: 12, b: 28 };
   const n = daily.length;
-  const max = Math.max(...daily.map((d) => d.wb + d.ozon), 1) * 1.1;
+  const max = Math.max(...daily.map(dayTotal), 1) * 1.1;
   const bw = (W - pad.l - pad.r) / n;
   const y = (v) => pad.t + ((max - v) * (H - pad.t - pad.b)) / max;
   let g = '';
@@ -1189,13 +1475,18 @@ function salesSvg(daily, W, H) {
   const step = Math.ceil(n / (W < 520 ? 4 : 8));
   daily.forEach((d, i) => {
     const x0 = pad.l + i * bw + bw * 0.15, w = bw * 0.7;
-    g += `<rect x="${x0}" y="${y(d.wb)}" width="${w}" height="${y(0) - y(d.wb)}" fill="var(--violet)" rx="2"/>`;
-    g += `<rect x="${x0}" y="${y(d.wb + d.ozon)}" width="${w}" height="${y(d.wb) - y(d.wb + d.ozon)}" fill="var(--blue)" rx="2"/>`;
+    // Каждый следующий «кирпич» начинается там, где закончился предыдущий
+    let base = 0;
+    for (const [k, , color] of SALES_SERIES) {
+      const v = d[k] || 0;
+      if (v > 0) g += `<rect x="${x0}" y="${y(base + v)}" width="${w}" height="${y(base) - y(base + v)}" fill="${color}" rx="2"/>`;
+      base += v;
+    }
     if (i % step === 0) g += `<text class="chart__axis" x="${x0 + w / 2}" y="${H - 8}" text-anchor="middle">${dm(d.date)}</text>`;
   });
   return {
     svg: `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Продажи по дням">${g}<line class="chart__guide" x1="0" x2="0" y1="${pad.t}" y2="${H - pad.b}"/></svg>`,
-    points: daily.map((d, i) => ({ x: pad.l + i * bw + bw / 2, html: `<b>${dmy(d.date)}</b>WB: ${rub(d.wb)}<br>Ozon: ${rub(d.ozon)}<br>Всего: ${rub(d.wb + d.ozon)}` }))
+    points: daily.map((d, i) => ({ x: pad.l + i * bw + bw / 2, html: `<b>${dmy(d.date)}</b>${SALES_SERIES.map(([k, l]) => `${l}: ${rub(d[k] || 0)}`).join('<br>')}<br>Всего: ${rub(dayTotal(d))}` }))
   };
 }
 
@@ -1252,7 +1543,6 @@ function delta(d, unit = '%', label = 'к прошлым 30 дням') {
 }
 const urgClass = (u) => (u === 'критично' ? 'urg--critical' : u === 'сегодня' ? 'urg--today' : 'urg--week');
 const prioName = { high: 'Высокий', medium: 'Средний', low: 'Низкий' };
-const mpName = (mp) => (mp === 'wb' ? 'WB' : mp === 'ozon' ? 'Ozon' : mp);
 
 function pageHead(title, sub, actions = '', tag = '') {
   return `<div class="page__head"><div><h2 class="page__title">${title} ${tag}</h2>${sub ? `<p class="page__sub">${sub}</p>` : ''}</div>${actions ? `<div class="page__actions">${actions}</div>` : ''}</div>`;
@@ -1335,7 +1625,7 @@ function channelsCard() {
   return `<section class="card">
     <div class="card__head"><h3 class="card__title">Маржинальность по каналам и ДРР ${tagFor('channels')}</h3><a class="card__more" href="#/marketplaces">Маркетплейсы</a></div>
     <div class="channels">
-      <div class="channel channel__head"><span>Канал</span><span>Маржа</span><span class="num">Маржа</span><span class="num">ДРР</span></div>
+      <div class="channel channel__head"><span>Канал</span><span aria-hidden="true"></span><span class="num">Маржа</span><span class="num">ДРР</span></div>
       ${ch.map((c) => `<div class="channel">
         <span>${esc(c.name)}</span>
         <div class="bar"><div class="bar__fill ${c.margin < 0 ? 'bar__fill--red' : 'bar__fill--violet'}" style="width:${Math.max(2, (Math.abs(c.margin) / maxM) * 100)}%"></div></div>
@@ -1581,7 +1871,7 @@ function pageFinance() {
     ['Себестоимость товара', -F.cogs, ''], ['Постоянные расходы', -F.fixed, ''], ['Реклама', -F.ads, ''], ['Чистая прибыль', F.profit, 'b']
   ];
   return `${demoBanner()}
-  ${pageHead('Финансы', 'Прибыль = выплаты маркетплейсов − себестоимость − постоянные расходы − реклама. Себестоимость и расходы берутся из settings.json.')}
+  ${pageHead('Финансы', 'Прибыль = выплаты маркетплейсов − себестоимость − постоянные расходы − реклама. Себестоимость и расходы берутся из settings.json.', `<a class="btn" href="#/reports">${icon('report')} ОПиУ, P&L и ДДС</a>`)}
   ${cashCard(true)}
   <div class="cards">
     <section class="card">
@@ -1617,7 +1907,7 @@ function pageSales() {
     <div class="card stat"><span class="stat__val">${nf.format(s.returns7)} (${pct(s.returnsPct)})</span><span class="stat__label">возвратов за 7 дней</span></div>
   </div>
   <section class="card">
-    <div class="card__head"><h3 class="card__title">Выручка по дням</h3><div class="legend"><span class="legend__item"><span class="legend__sq" style="background:var(--violet)"></span>WB</span><span class="legend__item"><span class="legend__sq" style="background:var(--blue)"></span>Ozon</span></div></div>
+    <div class="card__head"><h3 class="card__title">Выручка по дням</h3><div class="legend">${SALES_SERIES.map(([, l, c]) => `<span class="legend__item"><span class="legend__sq" style="background:${c}"></span>${l}</span>`).join('')}</div></div>
     <div class="chart" data-chart="sales"></div>
   </section>
   <section>
@@ -1630,11 +1920,13 @@ function pageSales() {
 // ----- Маркетплейсы -----
 function pageMarketplaces() {
   const M = state.data.marketplaces;
-  const block = (key, name, color) => {
+  const block = (key) => {
     const m = M[key];
+    if (!m) return '';
     const f = m.finance;
+    const meta = INTEG_META[key];
     return `<section class="card">
-      <div class="integ__top" style="margin-bottom:16px"><div class="logo" style="background:${color}">${key === 'wb' ? 'WB' : 'Oz'}</div><div><h3 class="card__title">${name}</h3><div class="card__note">${state.mode === 'live' && !m.connected ? 'не подключён — пример' : '30 дней'}</div></div></div>
+      <div class="integ__top" style="margin-bottom:16px"><div class="logo" style="background:${meta.bg};${meta.fg ? `color:${meta.fg}` : ''}">${meta.lg}</div><div><h3 class="card__title">${mpFull(key)}</h3><div class="card__note">${state.mode === 'live' && !m.connected ? 'не подключён — пример' : '30 дней'}</div></div></div>
       <div class="stats">
         <div class="stat"><span class="stat__val">${short(m.revenue)}</span><span class="stat__label">${delta(m.revenuePrev ? ((m.revenue - m.revenuePrev) / m.revenuePrev) * 100 : null)}</span></div>
         <div class="stat"><span class="stat__val">${short(m.payout)}</span><span class="stat__label">к выплате</span></div>
@@ -1646,8 +1938,8 @@ function pageMarketplaces() {
     </section>`;
   };
   return `${demoBanner()}
-  ${pageHead('Маркетплейсы', 'Wildberries и Ozon рядом: выручка, выплаты, реклама и склад.', '', tagFor('marketplaces'))}
-  <div class="cards">${block('wb', 'Wildberries', 'var(--wb)')}${block('ozon', 'Ozon', 'var(--ozon)')}</div>
+  ${pageHead('Маркетплейсы', 'Wildberries, Ozon и Яндекс Маркет рядом: выручка, выплаты, реклама и склад за 30 дней.', `<a class="btn" href="#/reports">${icon('report')} P&L по каналам</a>`, tagFor('marketplaces'))}
+  <div class="cards">${['wb', 'ozon', 'ym'].map(block).join('')}</div>
   ${channelsCard()}`;
 }
 
@@ -1731,6 +2023,8 @@ function pageTaxes() {
   const rate = state.data.settings.taxRate ?? 6;
   const usn = (state.data.kpi.revenue.value * rate) / 100;
   const taxes = pays.filter((p) => p.kind === 'tax');
+  const T = state.data.tax;
+  const calc = usnCalc({ obj: T.taxObject, rate: T.rate, hasEmployees: T.taxpayer.hasEmployees, inc: T.quarters.map((q) => q.income), exp: T.quarters.map((q) => q.expense), contr: T.quarters.map((q) => q.contributions) });
   return `${demoBanner()}
   ${pageHead('Налоги и платежи', 'График платежей из settings.json на ближайшие 45 дней. Платежи учитываются в прогнозе денег.', `<button class="btn" type="button" data-action="task-new" data-title="Оплатить налог">${icon('plus')} Задача на оплату</button>`)}
   <div class="stats stats--4">
@@ -1739,8 +2033,31 @@ function pageTaxes() {
     <div class="card stat"><span class="stat__val">${pays[0] ? `${pays[0].daysLeft} дн.` : '—'}</span><span class="stat__label">до ближайшего платежа</span></div>
     <div class="card stat"><span class="stat__val">${short(usn)}</span><span class="stat__label">УСН ${rate}% с выручки 30 дней (оценка)</span></div>
   </div>
-  ${table([{ label: 'Платёж' }, { label: 'Тип' }, { label: 'Дата' }, { label: 'Осталось' }, { label: 'Сумма', num: true }],
-    pays.map((p) => `<tr><td><b>${esc(p.name)}</b></td><td>${{ tax: 'налог', salary: 'зарплата', other: 'прочее' }[p.kind] || p.kind}</td><td>${dmy(p.date)}</td><td class="${p.daysLeft <= 3 ? 'warn' : ''}">${p.daysLeft} дн.</td><td class="num">${rub(p.amount)}</td></tr>`))}`;
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Документы по шаблонам ${tagFor('tax')}</h3><span class="card__note">УСН ${T.taxObject === 'income' ? '«доходы»' : '«доходы минус расходы»'}, ${T.rate}%</span></div>
+    <div class="templates">
+      ${Object.entries(TAX_DOCS).map(([k, [title, text, btn]]) => `<div class="template card card--inner">
+        <span class="template__title">${icon('report')} ${title}</span>
+        <p class="template__text">${text}</p>
+        <button class="btn btn--primary" type="button" data-action="tax-doc" data-kind="${k}">${icon('download')} ${btn}</button>
+      </div>`).join('')}
+    </div>
+    <p class="card__note report__foot">Документ откроется в окне предпросмотра — его можно распечатать, сохранить в PDF или скачать файлом. Это черновик для сверки: сдавать отчётность нужно через личный кабинет ФНС или оператора ЭДО.</p>
+  </section>
+  <section>
+    <div class="card__head"><h3 class="card__title">УСН по кварталам, ${T.year} ${tagFor('tax')}</h3><span class="card__note">данные сервера — с ${dmy(T.coverageFrom)}</span></div>
+    ${table([{ label: 'Квартал' }, { label: 'Доходы', num: true }, ...(T.taxObject === 'income' ? [{ label: 'Взносы', num: true }] : [{ label: 'Расходы', num: true }]), { label: 'Аванс / налог к уплате', num: true }, { label: 'Источник цифр' }],
+      T.quarters.map((q, i) => `<tr><td><b>${i + 1} квартал</b></td><td class="num">${q.future ? '—' : rub(q.income)}</td>
+        <td class="num">${q.future ? '—' : rub(T.taxObject === 'income' ? q.contributions : q.expense)}</td>
+        <td class="num">${q.future ? '—' : rub(Math.max(0, calc.pay[i]))}</td>
+        <td><span class="tag ${q.source === 'data' || q.source === 'settings' ? 'tag--green' : q.future ? '' : 'tag--amber'}">${qSrc(q)}</span></td></tr>`))}
+    <p class="card__note report__foot">Сервер хранит последние 60 дней. Доходы прошлых кварталов впишите в settings.json → taxHistory, тогда документы заполнятся полностью.</p>
+  </section>
+  <section>
+    <div class="card__head"><h3 class="card__title">Платежи по графику</h3></div>
+    ${table([{ label: 'Платёж' }, { label: 'Тип' }, { label: 'Дата' }, { label: 'Осталось', num: true }, { label: 'Сумма', num: true }],
+      pays.map((p) => `<tr><td><b>${esc(p.name)}</b></td><td>${{ tax: 'налог', salary: 'зарплата', other: 'прочее' }[p.kind] || p.kind}</td><td>${dmy(p.date)}</td><td class="num ${p.daysLeft <= 3 ? 'warn' : ''}">${p.daysLeft} дн.</td><td class="num">${rub(p.amount)}</td></tr>`))}
+  </section>`;
 }
 
 // ----- Документы -----
@@ -1773,7 +2090,7 @@ function pageDocuments() {
 
 // ----- Интеграции -----
 function pageIntegrations() {
-  const list = state.mode === 'live' ? state.integrations : Object.keys(INTEG_META).map((key) => ({ key, name: { wb: 'Wildberries', ozon: 'Ozon Seller', wbads: 'WB Продвижение', ozonperf: 'Ozon Performance', amocrm: 'amoCRM', bitrix: 'Битрикс24', tbank: 'Т-Банк Бизнес', tochka: 'Точка', imap: 'Почта (IMAP)', telegram: 'Telegram-бот', diadok: 'Диадок (ЭДО)', wbdocs: 'Документы WB', claude: 'Claude API' }[key], group: '', enabled: false, env: [], status: null }));
+  const list = state.mode === 'live' ? state.integrations : Object.keys(INTEG_META).map((key) => ({ key, name: { wb: 'Wildberries', ozon: 'Ozon Seller', ym: 'Яндекс Маркет', wbads: 'WB Продвижение', ozonperf: 'Ozon Performance', amocrm: 'amoCRM', bitrix: 'Битрикс24', tbank: 'Т-Банк Бизнес', tochka: 'Точка', imap: 'Почта (IMAP)', telegram: 'Telegram-бот', diadok: 'Диадок (ЭДО)', wbdocs: 'Документы WB', claude: 'Claude API' }[key], group: '', enabled: false, env: [], status: null }));
   const groups = [...new Set(list.map((i) => i.group))];
   const card = (i) => {
     const m = INTEG_META[i.key] || { lg: '?', bg: 'var(--s3)', desc: '' };
@@ -1783,7 +2100,7 @@ function pageIntegrations() {
     else if (!i.status) status = '<span class="integ__status warn">Ключ задан, ждём первой синхронизации</span>';
     else if (i.status.ok) status = `<span class="integ__status good">Подключено, синхронизация ${new Date(i.status.at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>`;
     else status = `<span class="integ__status bad">Ошибка подключения</span><div class="integ__err">${esc(i.status.error)}</div>`;
-    return `<article class="card integ"><div class="integ__top"><div class="logo" style="background:${m.bg}">${esc(m.lg)}</div><div><div class="integ__name">${esc(i.name)}</div><div class="integ__desc">${esc(m.desc)}</div></div></div>${status}</article>`;
+    return `<article class="card integ"><div class="integ__top"><div class="logo" style="background:${m.bg};${m.fg ? `color:${m.fg}` : ''}">${esc(m.lg)}</div><div><div class="integ__name">${esc(i.name)}</div><div class="integ__desc">${esc(m.desc)}</div></div></div>${status}</article>`;
   };
   return `${demoBanner()}
   ${pageHead('Интеграции', 'Каждый источник включается, когда в .env на сервере есть его ключ. Ключи никогда не передаются в браузер. Без ключа блок показывает пример с пометкой «демо».', `<button class="btn" type="button" data-action="sync">${icon('refresh')} Синхронизировать</button>`)}
@@ -1840,7 +2157,556 @@ function taskCard(t) {
   </button>`;
 }
 
-const PAGES = { home: pageHome, decisions: pageDecisions, analytics: pageAnalytics, finance: pageFinance, sales: pageSales, marketplaces: pageMarketplaces, ads: pageAds, crm: pageCrm, stock: pageStock, supplies: pageSupplies, taxes: pageTaxes, documents: pageDocuments, integrations: pageIntegrations, tasks: pageTasks };
+/* =====================================================================
+   ОТЧЁТЫ: ОПиУ (P&L по месяцам), P&L по каналам, ДДС
+   Все три отчёта — одна и та же «таблица статей»: строки — статьи, колонки — периоды или каналы.
+   Поэтому рисует их одна функция reportTable(), а различаются только данные.
+   ===================================================================== */
+const REPORT_TABS = [
+  ['opiu', 'ОПиУ по месяцам', 'Отчёт о прибылях и убытках (ОПиУ, по-английски P&L) отвечает на вопрос «заработали ли мы»: от выручки по шагам вычитаем удержания маркетплейсов, себестоимость, рекламу, постоянные расходы и налог.'],
+  ['pnl', 'P&L по каналам', 'Тот же расчёт прибыли, но столбцы — площадки. Видно, какой маркетплейс реально оставляет деньги после комиссий, себестоимости и рекламы, а какой только «крутит» выручку.'],
+  ['dds', 'ДДС', 'Движение денежных средств отвечает на вопрос «хватит ли денег»: что пришло на счёт и что ушло, по статьям. Прибыль и деньги — не одно и то же: закупка товара впрок уменьшает деньги, но не прибыль.']
+];
+
+// Число в ячейке: рубли без значка ₽ (он в заголовке), проценты — со знаком %
+const cellText = (v, type) => (v == null ? '' : type === 'pct' ? pct(v) : nf.format(v));
+
+function reportTable(rep, caption) {
+  const last = rep.columns.length - 1;
+  const head = rep.columns.map((c, i) => `<th scope="col" class="${i === last ? 'col--total' : ''}">${esc(c.label)}${c.note ? `<span class="report__note">${esc(c.note)}</span>` : ''}</th>`).join('');
+  const body = rep.rows.map((r) => {
+    const cells = r.values.map((v, i) => {
+      // Итоговые строки: плюс — зелёный, минус — красный; в остальных красим только минусы
+      const tone = r.type === 'pct' || v == null ? '' : r.type === 'total' ? (v < 0 ? 'cell--bad' : 'cell--good') : v < 0 ? 'cell--bad' : '';
+      return `<td class="${[i === last ? 'col--total' : '', tone].filter(Boolean).join(' ')}">${cellText(v, r.type)}</td>`;
+    }).join('');
+    return `<tr class="r--${r.type}"><th scope="${r.type === 'section' ? 'rowgroup' : 'row'}">${esc(r.label)}</th>${cells}</tr>`;
+  }).join('');
+  return `<div class="table-wrap"><table class="table report"><caption class="visually-hidden">${esc(caption)}</caption>
+    <thead><tr><th scope="col">Статья, ₽</th>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+// Скачивание текста файлом: Blob — «файл в памяти», ссылка на него живёт, пока мы её не отзовём
+function downloadText(text, filename, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// CSV для Excel: разделитель «;» и метка BOM в начале — иначе русский Excel покажет «кракозябры»
+function reportCsv(rep, name) {
+  const q = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+  const lines = [['Статья', ...rep.columns.map((c) => (c.note ? `${c.label} (${c.note})` : c.label))].map(q).join(';')];
+  for (const r of rep.rows) lines.push([q(r.label), ...r.values.map((v) => (v == null ? '' : String(v).replace('.', ',')))].join(';'));
+  downloadText(`\uFEFF${lines.join('\r\n')}`, `${name}-${localIso()}.csv`, 'text/csv;charset=utf-8');
+}
+
+function pageReports() {
+  const tab = REPORT_TABS.find((t) => t[0] === state.filters.repTab) || REPORT_TABS[0];
+  const [key, title, about] = tab;
+  const rep = state.data[key];
+  const ebt = rep.rows.find((r) => r.key === 'ebt')?.values.at(-1);
+  const net = rep.rows.find((r) => r.key === 'net')?.values.at(-1);
+  const close = rep.rows.find((r) => r.key === 'close')?.values.at(-1);
+  return `${demoBanner()}
+  ${pageHead('ОПиУ, P&L и ДДС', 'Управленческие отчёты по данным маркетплейсов и банка. Отрицательные числа — расходы и оттоки. Таблицу можно скачать и открыть в Excel.', `<button class="btn" type="button" data-action="rep-csv">${icon('download')} Скачать CSV</button>`)}
+  <div class="tabs" role="tablist" aria-label="Отчёт">
+    ${REPORT_TABS.map(([k, l]) => `<button class="tab ${k === key ? 'tab--on' : ''}" type="button" role="tab" aria-selected="${k === key}" data-action="rep-tab" data-tab="${k}">${l}</button>`).join('')}
+  </div>
+  <div class="stats stats--4">
+    ${key === 'dds'
+      ? `<div class="card stat"><span class="stat__val">${short(rep.rows[0].values.at(-1))}</span><span class="stat__label">на начало периода</span></div>
+         <div class="card stat"><span class="stat__val ${net < 0 ? 'bad' : 'good'}">${short(net)}</span><span class="stat__label">чистый денежный поток</span></div>
+         <div class="card stat"><span class="stat__val">${short(close)}</span><span class="stat__label">на конец периода</span></div>
+         <div class="card stat"><span class="stat__val ${rep.unknown ? 'warn' : ''}">${rep.unknown || 0}</span><span class="stat__label">операций без статьи</span></div>`
+      : `<div class="card stat"><span class="stat__val">${short(rep.rows.find((r) => r.key === 'revenue').values.at(-1))}</span><span class="stat__label">выручка, ${esc(rep.columns.at(-1).note || '')}</span></div>
+         <div class="card stat"><span class="stat__val ${ebt < 0 ? 'bad' : ''}">${short(ebt)}</span><span class="stat__label">прибыль до налога</span></div>
+         <div class="card stat"><span class="stat__val ${net < 0 ? 'bad' : 'good'}">${short(net)}</span><span class="stat__label">чистая прибыль</span></div>
+         <div class="card stat"><span class="stat__val">${pct(rep.rows.find((r) => r.key === 'margin').values.at(-1))}</span><span class="stat__label">рентабельность</span></div>`}
+  </div>
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">${title} ${tagFor(key)}</h3><span class="card__note">в рублях</span></div>
+    <p class="card__note report__about">${about}</p>
+    ${reportTable(rep, title)}
+    ${rep.note ? `<p class="card__note report__foot">${esc(rep.note)}</p>` : ''}
+  </section>`;
+}
+
+/* =====================================================================
+   РНП — «РУКА НА ПУЛЬСЕ»
+   Ежедневная сводка: одна колонка — один день. Как медсестра каждое утро записывает
+   температуру и давление в карту пациента: по ряду цифр сразу видно, где «скачок».
+   ===================================================================== */
+const RNP_FIELDS = ['orders', 'ordersSum', 'sales', 'payout', 'cogs', 'ads', 'returns'];
+// Сумма показателей дня по выбранным каналам
+function rnpDay(day, keys) {
+  const t = Object.fromEntries(RNP_FIELDS.map((f) => [f, 0]));
+  for (const k of keys) for (const f of RNP_FIELDS) t[f] += day[k]?.[f] || 0;
+  return t;
+}
+// Из сумм — показатели строки таблицы. days — сколько дней в колонке (для плана и постоянных расходов)
+function rnpMetrics(t, R, all, days = 1) {
+  const plan = all ? R.planPerDay * days : null;
+  const profit = t.payout - t.cogs - t.ads - (all ? R.fixedPerDay * days : 0);
+  return {
+    orders: t.orders, ordersSum: t.ordersSum, avg: t.orders ? t.ordersSum / t.orders : null, sales: t.sales,
+    plan, planPct: plan ? (t.sales / plan) * 100 : null,
+    ads: t.ads, drr: t.ordersSum ? (t.ads / t.ordersSum) * 100 : null,
+    payout: t.payout, profit, margin: t.sales ? (profit / t.sales) * 100 : null, returns: t.returns
+  };
+}
+// Строки таблицы: [ключ, название, формат, правило подсветки]
+// up — «больше лучше» (сравниваем со средним за период), plan / drr / neg / ret — свои пороги
+const RNP_ROWS = [
+  ['orders', 'Заказы, шт', 'n', 'up'], ['ordersSum', 'Заказы, ₽', 'r', 'up'], ['avg', 'Средний чек заказа, ₽', 'r', ''],
+  ['sales', 'Продажи (выкупы), ₽', 'r', 'up'], ['plan', 'План продаж, ₽', 'r', ''], ['planPct', 'Выполнение плана', 'p', 'plan'],
+  ['ads', 'Реклама, ₽', 'r', ''], ['drr', 'ДРР к заказам', 'p', 'drr'], ['payout', 'К выплате, ₽', 'r', 'up'],
+  ['profit', 'Прибыль, ₽', 'r', 'neg'], ['margin', 'Маржа', 'p', 'neg'], ['returns', 'Возвраты, шт', 'n', 'ret']
+];
+
+function rnpTone(rule, v, avg, maxDrr) {
+  if (v == null) return '';
+  if (rule === 'up' && avg) return v >= avg * 1.15 ? 'cell--good' : v <= avg * 0.85 ? 'cell--bad' : '';
+  if (rule === 'plan') return v >= 100 ? 'cell--good' : v < 85 ? 'cell--bad' : '';
+  if (rule === 'drr') return v > maxDrr ? 'cell--bad' : '';
+  if (rule === 'neg') return v < 0 ? 'cell--bad' : '';
+  if (rule === 'ret') return avg && v >= 2 && v >= avg * 1.6 ? 'cell--bad' : '';
+  return '';
+}
+
+// Сигналы дня: короткие выводы «что не так и что сделать». Сравниваем вчера (полный день) со средним за 7 дней до него
+function rnpSignals(R, keys, ch) {
+  const out = [];
+  const y = R.days.at(-2);
+  const prev = R.days.slice(-9, -2);
+  if (y && prev.length) {
+    for (const k of keys) {
+      const yv = rnpDay(y, [k]).ordersSum;
+      const avg = sum(prev, (d) => rnpDay(d, [k]).ordersSum) / prev.length;
+      if (avg > 0) {
+        const d = ((yv - avg) / avg) * 100;
+        if (d <= -20) out.push(['bad', `${mpFull(k)}: заказы вчера ${short(yv)} — на ${Math.round(-d)}% ниже среднего за неделю. Проверьте цены, остатки и рекламу.`]);
+        else if (d >= 20) out.push(['good', `${mpFull(k)}: заказы вчера ${short(yv)} — на ${Math.round(d)}% выше среднего. Убедитесь, что хватит остатков.`]);
+      }
+      const t = rnpDay(y, [k]);
+      if (t.ordersSum && (t.ads / t.ordersSum) * 100 > R.maxDrr) out.push(['warn', `${mpFull(k)}: ДРР вчера ${pct((t.ads / t.ordersSum) * 100)} при пороге ${R.maxDrr}%.`]);
+    }
+  }
+  if (ch === 'all') {
+    const p = state.data.plan;
+    const should = (p.plan * p.day) / p.days;
+    if (should) {
+      const d = ((p.fact - should) / should) * 100;
+      out.push([d >= 0 ? 'good' : d < -10 ? 'bad' : 'warn', `План месяца: продано ${short(p.fact)}, к сегодняшнему дню нужно было ${short(should)} (${d >= 0 ? '+' : '−'}${Math.abs(Math.round(d))}%). Прогноз на месяц — ${short(p.forecast)}.`]);
+    }
+  }
+  const arts = state.analytics.articles.filter((a) => ch === 'all' || a.mp === ch);
+  const reorder = state.data.stock.reorderDays;
+  for (const a of arts.filter((x) => x.days != null && x.days < reorder).sort((a1, a2) => a1.days - a2.days).slice(0, 3)) {
+    out.push(['bad', `Арт. ${a.article} (${mpName(a.mp)}) закончится через ${a.days} дн. — пора дозаказать.`]);
+  }
+  for (const a of arts.filter((x) => x.profit < 0).slice(0, 2)) out.push(['warn', `Арт. ${a.article} (${mpName(a.mp)}) продаётся в минус: маржа ${pct(a.margin)}.`]);
+  return out.slice(0, 8);
+}
+
+// Сигнал по артикулу для таблицы пульса
+function articleSignal(a, maxDrr, reorder) {
+  if (a.days != null && a.days < reorder) return ['tag--red', 'Дозаказ'];
+  if (a.profit < 0) return ['tag--red', 'В минус'];
+  if (a.drr > maxDrr) return ['tag--amber', 'ДРР выше порога'];
+  if (a.trend7 != null && a.trend7 <= -10) return ['tag--amber', 'Падает'];
+  if (a.trend7 != null && a.trend7 >= 10) return ['tag--green', 'Растёт'];
+  return ['', 'Норма'];
+}
+
+function pageRnp() {
+  const R = state.data.rnp;
+  const f = state.filters;
+  const chans = R.channels.length ? R.channels : ['wb', 'ozon', 'ym'];
+  if (f.rnpCh !== 'all' && !chans.includes(f.rnpCh)) f.rnpCh = 'all';
+  const all = f.rnpCh === 'all';
+  const keys = all ? chans : [f.rnpCh];
+  const n = Math.min(f.rnpDays, R.days.length);
+  // Колонки — дни от сегодня к прошлому: свежие цифры всегда слева, у названий строк
+  const days = R.days.slice(-n).reverse();
+  const perDay = days.map((d) => rnpMetrics(rnpDay(d, keys), R, all));
+  const totalT = Object.fromEntries(RNP_FIELDS.map((k) => [k, sum(days, (d) => rnpDay(d, keys)[k])]));
+  const total = rnpMetrics(totalT, R, all, n);
+  // «Средний день» — для денег и штук делим итог на число дней, проценты остаются как в итоге
+  const avg = Object.fromEntries(Object.entries(total).map(([k, v]) => [k, v == null ? null : ['avg', 'planPct', 'drr', 'margin'].includes(k) ? v : v / n]));
+  // Среднее «для сравнения» считаем без сегодняшнего дня: он ещё не закончился
+  const full = perDay.slice(1);
+  const cmpAvg = (k) => (full.length ? sum(full, (m) => m[k]) / full.length : null);
+
+  const fmt = (v, t) => (v == null ? '—' : t === 'p' ? pct(v) : nf.format(Math.round(v)));
+  const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  const head = days.map((d, i) => {
+    const wd = new Date(`${d.date}T00:00:00`).getDay();
+    return `<th scope="col" class="${wd === 0 || wd === 6 ? 'col--weekend' : ''}">${i === 0 ? 'Сегодня' : i === 1 ? 'Вчера' : `${WD[wd]}, ${dm(d.date)}`}<span class="report__note">${i === 0 ? 'день идёт' : i === 1 ? dm(d.date) : ''}</span></th>`;
+  }).join('');
+  const rows = RNP_ROWS.filter(([k]) => all || (k !== 'plan' && k !== 'planPct')).map(([k, label, t, rule]) => {
+    const ca = cmpAvg(k);
+    const cells = perDay.map((m, i) => {
+      const wd = new Date(`${days[i].date}T00:00:00`).getDay();
+      // Сегодняшний день не красим по правилу «к среднему» — он неполный
+      const tone = i === 0 && (rule === 'up' || rule === 'plan') ? '' : rnpTone(rule, m[k], ca, R.maxDrr);
+      return `<td class="${[wd === 0 || wd === 6 ? 'col--weekend' : '', tone].filter(Boolean).join(' ')}">${fmt(m[k], t)}</td>`;
+    }).join('');
+    const type = k === 'profit' ? 'sub' : t === 'p' ? 'pct' : 'item';
+    return `<tr class="r--${type}"><th scope="row">${label}</th><td class="col--total">${fmt(total[k], t)}</td><td>${fmt(avg[k], t)}</td>${cells}</tr>`;
+  }).join('');
+
+  const today = perDay[0], yest = perDay[1] || perDay[0];
+  const yAvg = cmpAvg('ordersSum');
+  const signals = rnpSignals(R, keys, f.rnpCh);
+  const maxDrr = R.maxDrr, reorder = state.data.stock.reorderDays;
+  const arts = state.analytics.articles.filter((a) => all || a.mp === f.rnpCh)
+    .map((a) => ({ ...a, _sig: articleSignal(a, maxDrr, reorder) }))
+    .sort((a, b) => (a._sig[1] === 'Норма') - (b._sig[1] === 'Норма') || b.revenue - a.revenue).slice(0, 15);
+
+  return `${demoBanner()}
+  ${pageHead('РНП — рука на пульсе', 'Каждый день в одной таблице: заказы, продажи, план, реклама и прибыль по каналам. Зелёным и красным подсвечены дни, которые отличаются от среднего больше чем на 15%.', `<a class="btn" href="#/reports">${icon('report')} ОПиУ и ДДС</a>`, tagFor('rnp'))}
+  <div class="toolbar" role="group" aria-label="Канал">
+    ${[['all', 'Все каналы'], ...chans.map((k) => [k, mpFull(k)])].map(([k, l]) => `<button class="chip ${f.rnpCh === k ? 'chip--on' : ''}" type="button" data-action="rnp-ch" data-value="${k}" aria-pressed="${f.rnpCh === k}">${l}</button>`).join('')}
+    <span class="toolbar__sep" aria-hidden="true"></span>
+    ${[7, 14, 30].map((d) => `<button class="chip ${f.rnpDays === d ? 'chip--on' : ''}" type="button" data-action="rnp-days" data-value="${d}" aria-pressed="${f.rnpDays === d}">${d} дней</button>`).join('')}
+  </div>
+  <div class="stats stats--4">
+    <div class="card stat"><span class="stat__val">${short(today.ordersSum)}</span><span class="stat__label">заказы сегодня, ${nf.format(today.orders)} шт</span></div>
+    <div class="card stat"><span class="stat__val">${short(yest.ordersSum)}</span><span class="stat__label">${delta(yAvg ? ((yest.ordersSum - yAvg) / yAvg) * 100 : null, '%', 'вчера к среднему')}</span></div>
+    <div class="card stat"><span class="stat__val ${total.drr > maxDrr ? 'bad' : ''}">${pct(total.drr)}</span><span class="stat__label">ДРР за ${n} дн., порог ${maxDrr}%</span></div>
+    <div class="card stat"><span class="stat__val ${total.profit < 0 ? 'bad' : 'good'}">${short(total.profit)}</span><span class="stat__label">прибыль за ${n} дн.${all ? '' : ' (без постоянных)'}</span></div>
+  </div>
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Сигналы дня</h3><span class="card__note">вчера к среднему за 7 дней</span></div>
+    ${signals.length ? `<ul class="signals">${signals.map(([t, s]) => `<li class="signal signal--${t}">${esc(s)}</li>`).join('')}</ul>` : '<p class="card__note">Всё в пределах нормы.</p>'}
+  </section>
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Показатели по дням: ${all ? 'все каналы' : mpFull(f.rnpCh)}</h3><span class="card__note">сегодня — слева</span></div>
+    <div class="table-wrap"><table class="table report report--rnp"><caption class="visually-hidden">РНП по дням</caption>
+      <thead><tr><th scope="col">Показатель</th><th scope="col" class="col--total">Итого<span class="report__note">${n} дн.</span></th><th scope="col">В среднем<span class="report__note">за день</span></th>${head}</tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <p class="card__note report__foot">Заказы — что покупатели оформили; продажи — что выкуплено. Прибыль = к выплате − себестоимость − реклама${all ? ' − постоянные расходы дня' : ''}.</p>
+  </section>
+  <section>
+    <div class="card__head"><h3 class="card__title">Пульс артикулов, 28 дней</h3><a class="card__more" href="#/analytics">Вся аналитика</a></div>
+    ${table([{ label: 'Артикул' }, { label: 'МП' }, { label: 'Выручка', num: true }, { label: 'Тренд 7 дн', num: true }, { label: 'Остаток, дн.', num: true }, { label: 'ДРР', num: true }, { label: 'Маржа', num: true }, { label: 'Сигнал' }],
+      arts.map((a) => `<tr><td><b>${esc(a.article)}</b><div class="row__meta">${esc(a.name)}</div></td><td>${mpName(a.mp)}</td>
+        <td class="num">${rub(a.revenue)}</td><td class="num ${a.trend7 == null ? 'muted' : a.trend7 >= 0 ? 'good' : 'bad'}">${a.trend7 == null ? '—' : pct(a.trend7)}</td>
+        <td class="num ${a.days != null && a.days < reorder ? 'bad' : ''}">${a.days ?? '—'}</td><td class="num ${a.drr > maxDrr ? 'bad' : ''}">${pct(a.drr)}</td>
+        <td class="num ${a.margin < 0 ? 'bad' : ''}">${pct(a.margin)}</td><td><span class="tag ${a._sig[0]}">${a._sig[1]}</span></td></tr>`))}
+  </section>`;
+}
+
+/* =====================================================================
+   НАЛОГИ: расчёт УСН и документы по шаблонам
+   Декларация считается «нарастающим итогом»: I квартал → полугодие → 9 месяцев → год.
+   Как счётчик воды: в квитанции пишут показания с начала года, а платим разницу с прошлым разом.
+   ===================================================================== */
+const Q_NAMES = ['I квартал', 'полугодие', '9 месяцев', 'год'];
+const KBK = { income: '18210501011011000110', 'income-expense': '18210501021011000110' };
+
+function usnCalc({ obj, rate, hasEmployees, inc, exp, contr }) {
+  const cum = (arr) => arr.reduce((acc, x, i) => [...acc, (acc[i - 1] || 0) + (Number(x) || 0)], []);
+  const I = cum(inc), E = cum(exp), C = cum(contr);
+  const r = (Number(rate) || 0) / 100;
+  if (obj === 'income') {
+    const tax = I.map((x) => Math.round(x * r));
+    // Взносы уменьшают налог: с работниками — не больше чем наполовину, без работников — хоть до нуля
+    const ded = tax.map((t, i) => Math.round(Math.min(C[i], hasEmployees ? t * 0.5 : t)));
+    const due = tax.map((t, i) => t - ded[i]);
+    return { I, E, C, tax, ded, due, pay: due.map((x, i) => x - (due[i - 1] || 0)), base: I, minTax: 0, useMin: false };
+  }
+  const base = I.map((x, i) => Math.max(0, x - E[i]));
+  const loss = I.map((x, i) => Math.max(0, E[i] - x));
+  const tax = base.map((b) => Math.round(b * r));
+  // Минимальный налог — 1% от доходов за год, если обычный налог получился меньше
+  const minTax = Math.round(I[3] * 0.01);
+  const useMin = minTax > tax[3];
+  const due = tax.map((t, i) => (i === 3 && useMin ? minTax : t));
+  return { I, E, C, tax, ded: [0, 0, 0, 0], due, pay: due.map((x, i) => x - (due[i - 1] || 0)), base, loss, minTax, useMin };
+}
+
+// Начальные значения формы: сохранённые реквизиты из браузера + цифры из данных дашборда
+function taxDefaults() {
+  const T = state.data.tax;
+  const saved = LS.get('bos_tax_form', {});
+  return { ...T.taxpayer, taxObject: T.taxObject, rate: T.rate, ...saved };
+}
+const QSRC = { data: 'по данным', partial: 'частично', settings: 'из settings.json', none: 'нет данных', future: 'ещё не наступил' };
+const qSrc = (q) => QSRC[q.future ? 'future' : q.source] || '';
+
+function taxFields(kind) {
+  const T = state.data.tax;
+  const d = taxDefaults();
+  const fields = [
+    { type: 'note', label: 'Реквизиты сохраняются только в этом браузере. Цифры подставлены из дашборда — проверьте и поправьте их перед подачей.' },
+    { name: 'kind', label: 'Кто подаёт', type: 'select', value: d.kind, options: [['ИП', 'Индивидуальный предприниматель'], ['ООО', 'Организация (ООО)']], half: true },
+    { name: 'year', label: 'Год', type: 'number', value: T.year, half: true },
+    { name: 'name', label: 'ФИО предпринимателя или название организации', value: d.name },
+    { name: 'inn', label: 'ИНН', value: d.inn, half: true },
+    { name: 'kpp', label: 'КПП (только для ООО)', value: d.kpp, half: true },
+    { name: 'oktmo', label: 'ОКТМО', value: d.oktmo, half: true },
+    { name: 'ifns', label: 'Код налоговой (4 цифры)', value: d.ifns, half: true }
+  ];
+  if (kind === 'kudir') {
+    fields.push({ name: 'quarter', label: 'Период книги', type: 'select', value: 'all', options: [['all', 'Весь год'], ['1', 'I квартал'], ['2', 'II квартал'], ['3', 'III квартал'], ['4', 'IV квартал']] });
+    fields.push({ name: 'taxObject', label: 'Объект налогообложения', type: 'select', value: d.taxObject, options: [['income', 'Доходы'], ['income-expense', 'Доходы минус расходы']] });
+    return fields;
+  }
+  fields.push(
+    { name: 'phone', label: 'Телефон', value: d.phone, half: true },
+    { name: 'hasEmployees', label: 'Есть работники', type: 'select', value: d.hasEmployees === false || d.hasEmployees === 'no' ? 'no' : 'yes', options: [['yes', 'Да'], ['no', 'Нет']], half: true },
+    { name: 'taxObject', label: 'Объект налогообложения', type: 'select', value: d.taxObject, options: [['income', 'Доходы'], ['income-expense', 'Доходы минус расходы']], half: true },
+    { name: 'rate', label: 'Ставка, %', type: 'number', value: d.rate, half: true }
+  );
+  if (kind === 'notice') {
+    // Уведомление подают за I квартал, полугодие и 9 месяцев; по умолчанию — последний прошедший
+    const cur = T.quarters.findIndex((q) => q.future || q.source === 'partial');
+    const def = Math.min(3, Math.max(1, cur === -1 ? 3 : cur));
+    fields.push({ name: 'period', label: 'За какой период', type: 'select', value: def, options: [['1', 'I квартал (код 34/01)'], ['2', 'Полугодие (код 34/02)'], ['3', '9 месяцев (код 34/03)']] });
+  }
+  fields.push({ type: 'note', label: 'Суммы по кварталам (не нарастающим итогом), ₽. Расходы нужны только для объекта «доходы минус расходы».' });
+  T.quarters.slice(0, kind === 'notice' ? 3 : 4).forEach((q, i) => {
+    fields.push(
+      { name: `inc${i}`, label: `Доходы, ${i + 1} кв. <span class="muted">(${qSrc(q)})</span>`, type: 'number', value: q.income, half: true },
+      { name: `contr${i}`, label: `Взносы уплачены, ${i + 1} кв.`, type: 'number', value: q.contributions, half: true },
+      { name: `exp${i}`, label: `Расходы, ${i + 1} кв.`, type: 'number', value: q.expense }
+    );
+  });
+  return fields;
+}
+
+// Значения формы → вход для расчёта
+function taxInput(v) {
+  const num = (k) => Number(v[k]) || 0;
+  return {
+    obj: v.taxObject === 'income-expense' ? 'income-expense' : 'income',
+    rate: num('rate') || (v.taxObject === 'income-expense' ? 15 : 6),
+    hasEmployees: v.hasEmployees !== 'no',
+    inc: [0, 1, 2, 3].map((i) => num(`inc${i}`)),
+    exp: [0, 1, 2, 3].map((i) => num(`exp${i}`)),
+    contr: [0, 1, 2, 3].map((i) => num(`contr${i}`))
+  };
+}
+
+// Оформление печатного документа: светлый лист A4, панель с кнопкой «Печать» не попадает на бумагу
+function docShell(title, body) {
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>
+  *{box-sizing:border-box} body{margin:0;background:#EEF0F4;color:#111;font:14px/1.45 "Times New Roman",Georgia,serif}
+  .bar{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 16px;background:#1A1E3D;color:#fff;font:14px system-ui,sans-serif}
+  .bar button{font:inherit;padding:8px 16px;border:0;border-radius:8px;background:#4C8DFF;color:#fff;cursor:pointer}
+  .sheet{max-width:840px;margin:24px auto;padding:40px 48px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+  h1{margin:0 0 4px;font-size:19px;text-align:center} h2{margin:24px 0 8px;font-size:16px} .sub{margin-bottom:16px;color:#444;text-align:center}
+  table{width:100%;margin:8px 0 16px;border-collapse:collapse} th,td{padding:6px 8px;border:1px solid #9AA0AE;vertical-align:top;text-align:left}
+  th{background:#F2F3F6;font-weight:600} td.code{width:72px;text-align:center;font-family:Consolas,monospace}
+  td.val,th.val{width:180px;text-align:right;font-family:Consolas,monospace;white-space:nowrap} td.key{width:42%;color:#333}
+  tr.total td{font-weight:700;background:#F7F7F9} .blank{color:#B3261E;font-style:italic}
+  .warn{margin:12px 0;padding:10px 14px;border:1px solid #E0A800;border-radius:6px;background:#FFF8E1;font:13px/1.5 system-ui,sans-serif}
+  .warn ul{margin:6px 0 0;padding-left:18px} .muted{color:#555;font-size:12px} .sign{display:flex;justify-content:space-between;gap:24px;margin-top:32px}
+  @media (max-width:640px){.sheet{margin:0;padding:20px 16px} td.val,th.val{width:auto}}
+  .embed .bar{display:none}
+  @media print{body{background:#fff}.bar,.warn{display:none}.sheet{max-width:none;margin:0;padding:0;box-shadow:none}}
+  </style></head><body><div class="bar"><button type="button" onclick="print()">Печать / сохранить в PDF</button><span>${esc(title)} — черновик из BrandOS</span></div><main class="sheet">${body}</main></body></html>`;
+}
+
+function taxDocument(kind, v) {
+  const T = state.data.tax;
+  const isIP = v.kind !== 'ООО';
+  const x = taxInput(v);
+  const c = usnCalc(x);
+  const money = (n) => nf.format(Math.round(n || 0));
+  const val = (s) => (String(s ?? '').trim() ? esc(s) : '<span class="blank">не заполнено</span>');
+  const plus = (n) => (n > 0 ? money(n) : '—');
+  const minus = (n) => (n < 0 ? money(-n) : '—');
+  const keyTable = (rows) => `<table><tbody>${rows.map(([k, s]) => `<tr><td class="key">${k}</td><td>${s}</td></tr>`).join('')}</tbody></table>`;
+  const lines = (rows) => `<table><thead><tr><th>Код строки</th><th>Показатель</th><th class="val">Значение</th></tr></thead><tbody>${rows.map(([code, l, s]) => `<tr><td class="code">${code}</td><td>${l}</td><td class="val">${s}</td></tr>`).join('')}</tbody></table>`;
+  const objName = x.obj === 'income' ? 'доходы' : 'доходы, уменьшенные на величину расходов';
+  const year = Number(v.year) || T.year;
+
+  // Что стоит проверить: пустые реквизиты и неполные кварталы
+  const warn = [];
+  for (const [k, l] of [['inn', 'ИНН'], ['oktmo', 'ОКТМО'], ['ifns', 'код налоговой'], ['name', 'ФИО или название']]) if (!String(v[k] || '').trim()) warn.push(`Не заполнено: ${l}.`);
+  if (!isIP && !String(v.kpp || '').trim()) warn.push('Для организации нужен КПП.');
+  T.quarters.forEach((q, i) => { if (!q.future && (q.source === 'none' || q.source === 'partial')) warn.push(`${i + 1} квартал: данных в дашборде ${q.source === 'none' ? 'нет' : 'только часть'} (сервер хранит последние 60 дней) — сверьте доходы с отчётами о реализации и выпиской.`); });
+  warn.push('Это черновик по шаблону для сверки, а не электронная декларация. Сдавайте через личный кабинет ФНС или оператора ЭДО по актуальной форме.');
+  if (c.I[3] > 60000000) warn.push('Доход за год больше 60 млн ₽ — с 2025 года на УСН появляется обязанность платить НДС. Обсудите с бухгалтером.');
+  const warnBox = `<div class="warn"><b>Перед подачей проверьте:</b><ul>${warn.map((w) => `<li>${w}</li>`).join('')}</ul></div>`;
+  const signBlock = `<div class="sign"><span>${isIP ? 'Индивидуальный предприниматель' : 'Руководитель'} ____________ / ${esc(v.name || '')} /</span><span>Дата ____________</span></div>`;
+
+  if (kind === 'decl') {
+    const title = `Декларация УСН за ${year} год`;
+    const s1 = x.obj === 'income'
+      ? lines([
+        ['010', 'Код по ОКТМО', val(v.oktmo)],
+        ['020', 'Сумма авансового платежа к уплате не позднее 28 апреля', plus(c.pay[0])],
+        ['040', 'Сумма авансового платежа к уплате не позднее 28 июля', plus(c.pay[1])],
+        ['050', 'Сумма авансового платежа к уменьшению за полугодие', minus(c.pay[1])],
+        ['070', 'Сумма авансового платежа к уплате не позднее 28 октября', plus(c.pay[2])],
+        ['080', 'Сумма авансового платежа к уменьшению за 9 месяцев', minus(c.pay[2])],
+        ['100', 'Сумма налога к доплате за год', plus(c.pay[3])],
+        ['110', 'Сумма налога к уменьшению за год', minus(c.pay[3])]
+      ])
+      : lines([
+        ['010', 'Код по ОКТМО', val(v.oktmo)],
+        ['020', 'Сумма авансового платежа к уплате не позднее 28 апреля', plus(c.pay[0])],
+        ['040', 'Сумма авансового платежа к уплате не позднее 28 июля', plus(c.pay[1])],
+        ['050', 'Сумма авансового платежа к уменьшению за полугодие', minus(c.pay[1])],
+        ['070', 'Сумма авансового платежа к уплате не позднее 28 октября', plus(c.pay[2])],
+        ['080', 'Сумма авансового платежа к уменьшению за 9 месяцев', minus(c.pay[2])],
+        ['100', 'Сумма налога к доплате за год', plus(c.useMin ? 0 : c.pay[3])],
+        ['110', 'Сумма налога к уменьшению за год', minus(c.useMin ? 0 : c.pay[3])],
+        ['120', 'Сумма минимального налога к уплате', c.useMin ? money(c.minTax) : '—']
+      ]);
+    // Четыре строки подряд: код 110, 111, 112, 113 и т. д. — I квартал, полугодие, 9 месяцев, год
+    const q4 = (prefix, arr, f = money) => arr.map((n, i) => [`${prefix}${i}`, Q_NAMES[i], f(n)]);
+    const s2 = x.obj === 'income'
+      ? `<h2>Раздел 2.1.1. Расчёт налога (объект «доходы»)</h2>${lines([
+        ['102', 'Признак налогоплательщика: 1 — производит выплаты физлицам, 2 — ИП без работников', x.hasEmployees ? '1' : '2'],
+        ...q4('11', c.I).map(([k, l, s]) => [k, `Доходы нарастающим итогом: ${l}`, s]),
+        ...[0, 1, 2, 3].map((i) => [`12${i}`, `Ставка налога, %: ${Q_NAMES[i]}`, String(x.rate)]),
+        ...q4('13', c.tax).map(([k, l, s]) => [k, `Сумма исчисленного налога: ${l}`, s]),
+        ...q4('14', c.ded).map(([k, l, s]) => [k, `Взносы, уменьшающие налог: ${l}`, s])
+      ])}`
+      : `<h2>Раздел 2.2. Расчёт налога (объект «доходы минус расходы»)</h2>${lines([
+        ...q4('21', c.I).map(([k, l, s]) => [k, `Доходы нарастающим итогом: ${l}`, s]),
+        ...q4('22', c.E).map(([k, l, s]) => [k, `Расходы нарастающим итогом: ${l}`, s]),
+        ...q4('24', c.base).map(([k, l, s]) => [k, `Налоговая база: ${l}`, s]),
+        ...q4('25', c.loss).map(([k, l, s]) => [k, `Сумма убытка: ${l}`, s]),
+        ...[0, 1, 2, 3].map((i) => [`26${i}`, `Ставка налога, %: ${Q_NAMES[i]}`, String(x.rate)]),
+        ...q4('27', c.tax).map(([k, l, s]) => [k, `Сумма исчисленного налога: ${l}`, s]),
+        ['280', 'Сумма исчисленного минимального налога за год (1% от доходов)', money(c.minTax)]
+      ])}`;
+    const body = `${warnBox}
+      <h1>Налоговая декларация по налогу, уплачиваемому в связи с применением упрощённой системы налогообложения</h1>
+      <div class="sub">Форма по КНД 1152017 · черновик для сверки</div>
+      <h2>Титульный лист</h2>
+      ${keyTable([
+        ['ИНН', val(v.inn)], ...(isIP ? [] : [['КПП', val(v.kpp)]]), ['Номер корректировки', '0'],
+        ['Налоговый период (код)', '34 — календарный год'], ['Отчётный год', String(year)],
+        ['Представляется в налоговый орган (код)', val(v.ifns)], ['По месту нахождения (учёта) (код)', isIP ? '120 — по месту жительства ИП' : '210 — по месту нахождения организации'],
+        [isIP ? 'Налогоплательщик (ФИО)' : 'Налогоплательщик (наименование)', val(v.name)],
+        ['Объект налогообложения', `${x.obj === 'income' ? '1' : '2'} — ${objName}`], ['Номер телефона', val(v.phone)],
+        ['Достоверность сведений подтверждаю', isIP ? '1 — налогоплательщик' : '1 — руководитель организации']
+      ])}
+      <h2>Раздел ${x.obj === 'income' ? '1.1' : '1.2'}. Сумма налога к уплате (уменьшению)</h2>
+      ${s1}
+      <p class="muted">Строки 030, 060 и 090 (ОКТМО) заполняются, только если в течение года менялось место нахождения. Код бюджетной классификации для уплаты: ${KBK[x.obj]} (через ЕНП).</p>
+      ${s2}
+      ${signBlock}`;
+    return { title, filename: `deklaraciya-usn-${year}.html`, html: docShell(title, body) };
+  }
+
+  if (kind === 'notice') {
+    const p = Number(v.period) || 1;
+    const amount = Math.max(0, c.pay[p - 1]);
+    const deadline = ['25 апреля', '25 июля', '25 октября'][p - 1];
+    const title = `Уведомление об исчисленном авансе УСН за ${Q_NAMES[p - 1]} ${year}`;
+    const body = `${warnBox}
+      <h1>Уведомление об исчисленных суммах налогов, авансовых платежей по налогам, сборов, страховых взносов</h1>
+      <div class="sub">Форма по КНД 1110355 · подать до ${deadline} ${year}, уплатить до 28-го числа</div>
+      <h2>Сведения о налогоплательщике</h2>
+      ${keyTable([['ИНН', val(v.inn)], ...(isIP ? [] : [['КПП', val(v.kpp)]]), [isIP ? 'ФИО' : 'Наименование', val(v.name)], ['Код налогового органа', val(v.ifns)], ['Достоверность подтверждаю', isIP ? '1 — налогоплательщик' : '1 — руководитель']])}
+      <h2>Данные (одна строка уведомления)</h2>
+      <table><thead><tr><th>КПП</th><th>КБК</th><th>ОКТМО</th><th class="val">Сумма, ₽</th><th>Период / номер</th><th>Год</th></tr></thead>
+      <tbody><tr><td>${isIP ? '—' : val(v.kpp)}</td><td>${KBK[x.obj]}</td><td>${val(v.oktmo)}</td><td class="val">${money(amount)}</td><td>34/0${p}</td><td>${year}</td></tr></tbody></table>
+      <h2>Как получилась сумма</h2>
+      ${lines([
+        ['', `Доходы нарастающим итогом за ${Q_NAMES[p - 1]}`, money(c.I[p - 1])],
+        ...(x.obj === 'income' ? [] : [['', `Расходы нарастающим итогом за ${Q_NAMES[p - 1]}`, money(c.E[p - 1])]]),
+        ['', `Налог по ставке ${x.rate}% нарастающим итогом`, money(c.tax[p - 1])],
+        ...(x.obj === 'income' ? [['', `Уменьшение на взносы (${x.hasEmployees ? 'не более 50% — есть работники' : 'до 100% — без работников'})`, money(c.ded[p - 1])]] : []),
+        ['', 'Начислено за прошлые периоды года', money(p > 1 ? c.due[p - 2] : 0)],
+        ['', 'Аванс к уплате за период', money(amount)]
+      ])}
+      ${c.pay[p - 1] < 0 ? '<p class="muted">Аванс за период получился к уменьшению — уведомление с нулём можно не подавать.</p>' : ''}
+      ${signBlock}`;
+    return { title, filename: `uvedomlenie-usn-${year}-34-0${p}.html`, html: docShell(title, body) };
+  }
+
+  // КУДиР: раздел I (доходы и расходы) и раздел IV (взносы)
+  const qSel = v.quarter === 'all' ? [1, 2, 3, 4] : [Number(v.quarter)];
+  const qOf = (iso) => Math.floor((Number(iso.slice(5, 7)) - 1) / 3) + 1;
+  const showExp = x.obj === 'income-expense';
+  let n = 0;
+  const qBlocks = qSel.map((qn) => {
+    const q = T.quarters[qn - 1];
+    const ops = T.incomeOps.filter((o) => qOf(o.date) === qn && Number(o.date.slice(0, 4)) === year);
+    const inQ = Number(v[`inc${qn - 1}`]) || q.income;
+    const adj = inQ - sum(ops, (o) => o.amount);
+    const rows = ops.map((o) => `<tr><td>${++n}</td><td>${dmy(o.date)}, ${esc(o.party)}</td><td>${esc(o.purpose)}${o.mp ? ' (выплата маркетплейса)' : ''}</td><td class="val">${money(o.amount)}</td>${showExp ? '<td class="val"></td>' : ''}</tr>`);
+    if (Math.abs(adj) >= 1) rows.push(`<tr><td>${++n}</td><td>${qn} кв.</td><td>Корректировка до дохода по данным продаж: удержания маркетплейсов (доход считается по полной цене продажи), выплаты за прошлые периоды и поступления вне выписки. Сверьте с отчётами о реализации.</td><td class="val">${money(adj)}</td>${showExp ? '<td class="val"></td>' : ''}</tr>`);
+    if (showExp) rows.push(`<tr><td>${++n}</td><td>${qn} кв.</td><td>Расходы за квартал (оплаченные и подтверждённые документами) — расшифруйте по первичным документам</td><td class="val"></td><td class="val">${money(q.expense)}</td></tr>`);
+    rows.push(`<tr class="total"><td></td><td colspan="2">Итого за ${qn} квартал</td><td class="val">${money(inQ)}</td>${showExp ? `<td class="val">${money(q.expense)}</td>` : ''}</tr>`);
+    return rows.join('');
+  }).join('');
+  const title = `КУДиР за ${v.quarter === 'all' ? `${year} год` : `${v.quarter} квартал ${year}`}`;
+  const body = `${warnBox}
+    <h1>Книга учёта доходов и расходов организаций и индивидуальных предпринимателей, применяющих упрощённую систему налогообложения</h1>
+    <div class="sub">на ${year} год · форма по приказу Минфина России от 22.10.2012 № 135н · черновик</div>
+    ${keyTable([[isIP ? 'Налогоплательщик (ФИО)' : 'Налогоплательщик (наименование)', val(v.name)], ['ИНН', val(v.inn)], ...(isIP ? [] : [['КПП', val(v.kpp)]]), ['Объект налогообложения', objName]])}
+    <h2>Раздел I. Доходы и расходы</h2>
+    <table><thead><tr><th>№</th><th>Дата и номер документа</th><th>Содержание операции</th><th class="val">Доходы, ₽</th>${showExp ? '<th class="val">Расходы, ₽</th>' : ''}</tr></thead><tbody>${qBlocks}</tbody></table>
+    ${x.obj === 'income' ? `<h2>Раздел IV. Расходы, уменьшающие налог (страховые взносы)</h2>
+    <table><thead><tr><th>Период</th><th class="val">Уплачено взносов, ₽</th></tr></thead><tbody>${qSel.map((qn) => `<tr><td>${qn} квартал</td><td class="val">${money(Number(v[`contr${qn - 1}`]) || T.quarters[qn - 1].contributions)}</td></tr>`).join('')}</tbody></table>` : ''}
+    <p class="muted">Поступления взяты из выписки банка, которую видит дашборд. Доход маркетплейсов по УСН — полная цена продажи по отчёту о реализации, а не сумма перечисления.</p>
+    ${signBlock}`;
+  return { title, filename: `kudir-${year}${v.quarter === 'all' ? '' : `-q${v.quarter}`}.html`, html: docShell(title, body) };
+}
+
+/* Предпросмотр документа прямо в дашборде: <iframe srcdoc> — «окно в окне» со своим HTML и стилями.
+   Новая вкладка (window.open) ненадёжна: её режут блокировщики всплывающих окон.
+   Печать из iframe печатает только документ, без интерфейса дашборда. */
+function openDoc({ html, filename, title }) {
+  $('.docview')?.remove();
+  const box = document.createElement('div');
+  box.className = 'docview';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-label', title);
+  box.innerHTML = `<div class="docview__bar"><b class="docview__title">${esc(title)}</b><div class="docview__actions">
+    <button class="btn btn--primary" type="button" data-doc="print">${icon('report')} Печать / PDF</button>
+    <button class="btn" type="button" data-doc="save">${icon('download')} Скачать</button>
+    <button class="btn btn--icon btn--ghost" type="button" data-doc="close" aria-label="Закрыть предпросмотр">${icon('x')}</button>
+  </div></div><iframe class="docview__frame" title="${esc(title)}"></iframe>`;
+  document.body.append(box);
+  const frame = $('iframe', box);
+  // Внутри предпросмотра своя панель документа не нужна — прячем её классом embed
+  frame.srcdoc = html.replace('<body>', '<body class="embed">');
+  box.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-doc]')?.dataset.doc;
+    if (act === 'print') frame.contentWindow.print();
+    if (act === 'save') downloadText(html, filename, 'text/html;charset=utf-8');
+    if (act === 'close') box.remove();
+  });
+  $('[data-doc="print"]', box).focus();
+}
+
+const TAX_DOCS = {
+  decl: ['Декларация по УСН', 'Годовая декларация (КНД 1152017): титульный лист, разделы 1.1 / 1.2 и 2.1.1 / 2.2 с расчётом по кварталам.', 'Сформировать декларацию'],
+  notice: ['Уведомление об авансе', 'Уведомление (КНД 1110355) об исчисленном авансовом платеже за квартал, полугодие или 9 месяцев.', 'Сформировать уведомление'],
+  kudir: ['КУДиР', 'Книга учёта доходов и расходов: поступления из выписки по кварталам и итоги для сверки с декларацией.', 'Сформировать книгу']
+};
+function openTaxDoc(kind) {
+  const T = state.data.tax;
+  // В КУДиР нужны и квартальные суммы — подставляем их скрытно из данных
+  const extra = kind === 'kudir' ? Object.fromEntries(T.quarters.flatMap((q, i) => [[`inc${i}`, q.income], [`contr${i}`, q.contributions], [`exp${i}`, q.expense]])) : {};
+  openModal({
+    title: TAX_DOCS[kind][0],
+    fields: taxFields(kind),
+    submit: 'Сформировать',
+    onSubmit: (v) => {
+      const keep = ['kind', 'name', 'inn', 'kpp', 'oktmo', 'ifns', 'phone', 'hasEmployees', 'taxObject', 'rate'];
+      LS.set('bos_tax_form', Object.fromEntries(keep.filter((k) => v[k] != null).map((k) => [k, v[k]])));
+      openDoc(taxDocument(kind, { rate: T.rate, ...extra, ...v }));
+    }
+  });
+}
+
+const PAGES = { home: pageHome, decisions: pageDecisions, rnp: pageRnp, analytics: pageAnalytics, finance: pageFinance, reports: pageReports, sales: pageSales, marketplaces: pageMarketplaces, ads: pageAds, crm: pageCrm, stock: pageStock, supplies: pageSupplies, taxes: pageTaxes, documents: pageDocuments, integrations: pageIntegrations, tasks: pageTasks };
 
 /* =====================================================================
    РЕНДЕР
@@ -1853,7 +2719,7 @@ function renderChrome() {
   $('#greeting').textContent = `${hello}, ${D.owner}`;
   $('#today').textContent = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
   // Значки подключённых источников
-  const src = [['wb', 'WB'], ['ozon', 'Ozon'], ['bank', 'Банк'], ['crm', 'CRM']];
+  const src = [['wb', 'WB'], ['ozon', 'Ozon'], ['ym', 'ЯМ'], ['bank', 'Банк'], ['crm', 'CRM']];
   $('#sources').innerHTML = src.map(([k, l]) => {
     const on = state.mode === 'live' && D.sources[k];
     const cls = state.mode === 'demo' ? 'source--demo' : on ? 'source--on' : '';
@@ -1944,6 +2810,8 @@ let lastFocus = null;
 function openModal({ title, fields, submit = 'Сохранить', onSubmit, danger }) {
   lastFocus = document.activeElement;
   const fieldHtml = (f) => {
+    // «Поле-пояснение»: просто текст между полями, ничего не отправляет
+    if (f.type === 'note') return `<p class="card__note modal__note">${f.label}</p>`;
     const id = `f-${f.name}`;
     const req = f.required ? 'required aria-required="true"' : '';
     let control;
@@ -1998,6 +2866,7 @@ function closeModal() { const m = $('#modal'); m.classList.remove('modal--open')
 // Ловушка фокуса: Tab не уходит из открытого окна
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if ($('.docview')) return $('.docview').remove();
     if ($('#modal').classList.contains('modal--open')) return closeModal();
     if ($('#chat').classList.contains('chat--open')) return closeChat();
     if ($('#sidebar').classList.contains('sidebar--open')) return closeMenu();
@@ -2215,6 +3084,11 @@ document.addEventListener('click', async (e) => {
       return render();
     }
     case 'dec-tab': state.filters.decTab = el.dataset.tab; return render();
+    case 'rep-tab': state.filters.repTab = el.dataset.tab; return render();
+    case 'rep-csv': return reportCsv(state.data[state.filters.repTab], { opiu: 'opiu', pnl: 'pnl-kanaly', dds: 'dds' }[state.filters.repTab]);
+    case 'rnp-ch': state.filters.rnpCh = el.dataset.value; return render();
+    case 'rnp-days': state.filters.rnpDays = Number(el.dataset.value); return render();
+    case 'tax-doc': return openTaxDoc(el.dataset.kind);
     case 'dec-recompute': return recomputeDecisions(el);
     case 'dec-accept': el.disabled = true; try { await decide(id, 'accept'); toast('Решение принято: шаги добавлены в задачи'); } catch (err) { toast(err.message); el.disabled = false; } return;
     case 'dec-postpone': try { await decide(id, 'postpone'); toast('Отложено на 3 дня'); } catch (err) { toast(err.message); } return;

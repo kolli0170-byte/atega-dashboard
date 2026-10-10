@@ -83,6 +83,50 @@ const first = listDecisions().decisions.find((d) => d.key === 'stock:wb:A1');
 accept(first.id);
 assert.equal(db.tasks.filter((t) => t.decisionId === first.id).length, first.steps.length, 'шаги стали задачами');
 
+// ===== Яндекс Маркет: добавляем канал и проверяем, что всё выросло ровно на его вклад =====
+// Каждый день: заказ на 3 000 ₽ (комиссия 600 ₽, 2 шт), отменённый заказ на 5 000 ₽ (не считается),
+// каждый 10-й день — полностью возвращённый заказ на 1 000 ₽ (не даёт выручки, но считается возвратом)
+process.env.YM_API_KEY = 'test'; process.env.YM_CAMPAIGN_ID = '1';
+const ymOrders = [];
+for (let i = 0; i < 60; i++) {
+  const date = isoDay(daysAgo(i));
+  ymOrders.push({ mp: 'ym', id: `y${i}`, date, status: 'DELIVERED', cancelled: false, isReturn: false, revenue: 3000, commission: 600, payout: 2400, units: 2, items: [{ article: 'YM1', name: 'Гамак', units: 2, revenue: 3000 }] });
+  ymOrders.push({ mp: 'ym', id: `c${i}`, date, status: 'CANCELLED_IN_PROCESSING', cancelled: true, isReturn: false, revenue: 5000, commission: 0, payout: 5000, units: 1, items: [{ article: 'YM1', name: 'Гамак', units: 1, revenue: 5000 }] });
+  if (i % 10 === 0) ymOrders.push({ mp: 'ym', id: `r${i}`, date, status: 'RETURNED', cancelled: false, isReturn: true, revenue: 1000, commission: 0, payout: 1000, units: 1, items: [{ article: 'YM1', name: 'Гамак', units: 1, revenue: 1000 }] });
+}
+db.raw.ym = { orders: ymOrders, stocks: [{ mp: 'ym', article: 'YM1', name: 'Гамак', qty: 120, inWay: 0 }] };
+const D2 = buildDashboard();
+const A2 = buildAnalytics();
+// Выручка Маркета за 30 дней: 30 × 3 000 = 90 000; выплаты 30 × 2 400 = 72 000; себестоимость 38% = 34 200
+assert.equal(D2.kpi.revenue.value, D.kpi.revenue.value + 90000, 'выручка с Маркетом');
+assert.equal(D2.kpi.profit.value, D.kpi.profit.value + 72000 - 34200, 'прибыль с Маркетом');
+assert.equal(D2.channels.find((c) => c.key === 'ym').margin, 42, 'маржа Маркета');
+assert.ok(D2.marketplaces.ym.connected && D2.marketplaces.ym.returns === 3, 'блок Маркета: 3 возврата за 30 дней');
+// 28 дней × 2 шт = 56 шт → 2 шт в день → 120 шт хватит на 60 дней
+assert.equal(A2.articles.find((a) => a.article === 'YM1').days, 60, 'дни остатка YM1');
+
+// ===== Отчёты =====
+const line = (rep, key) => rep.rows.find((r) => r.key === key).values;
+const last = (arr) => arr[arr.length - 1];
+// P&L по каналам: «Итого» прибыль до налога совпадает с прибылью на главной
+assert.equal(last(line(D2.pnl, 'ebt')), D2.kpi.profit.value, 'P&L по каналам = прибыль на главной');
+assert.equal(last(line(D2.pnl, 'revenue')), D2.kpi.revenue.value, 'P&L: выручка');
+// ОПиУ: столбец «Итого» равен сумме месяцев, чистая прибыль = прибыль до налога − налог
+const opRev = line(D2.opiu, 'revenue');
+assert.equal(last(opRev), opRev.slice(0, -1).reduce((a, b) => a + b, 0), 'ОПиУ: итого = сумма месяцев');
+assert.ok(line(D2.opiu, 'net').every((v, i) => Math.abs(v - (line(D2.opiu, 'ebt')[i] + line(D2.opiu, 'tax')[i])) <= 1), 'ОПиУ: чистая = до налога − налог');
+// ДДС: остаток на начало + поток = остаток на конец; выплата WB распознана как «Выплаты маркетплейсов»
+assert.equal(last(line(D2.dds, 'open')) + last(line(D2.dds, 'net')), last(line(D2.dds, 'close')), 'ДДС сходится');
+assert.equal(last(line(D2.dds, 'mp_in')), 100000, 'ДДС: выплата WB по статье маркетплейсов');
+// РНП: сегодня у Маркета 2 шт + 1 шт возвращённого заказа, 1 возврат; отменённый не считается
+const rnpToday = D2.rnp.days.at(-1);
+assert.equal(rnpToday.ym.orders, 3, 'РНП: заказы Маркета сегодня');
+assert.equal(rnpToday.ym.returns, 1, 'РНП: возвраты Маркета сегодня');
+assert.deepEqual(D2.rnp.channels, ['wb', 'ozon', 'ym'], 'РНП: каналы');
+// Налоги: доход текущего квартала посчитан, взносов в тестовой выписке нет
+const qNow = D2.tax.quarters[Math.floor(new Date().getMonth() / 3)];
+assert.ok(qNow.income > 0 && qNow.contributions === 0, 'налоги: доход квартала');
+
 console.log('Все проверки пройдены.\n');
 console.log('Выручка за 30 дней    ', rub(D.kpi.revenue.value), `(${D.kpi.revenue.delta?.toFixed(1)}% к прошлым 30 дням)`);
 console.log('Выплаты маркетплейсов ', rub(D.finance.payout));
@@ -93,6 +137,9 @@ console.log('План месяца           ', `${rub(D.plan.fact)} из ${rub(
 console.log('Прогноз денег         ', `сейчас ${rub(D.cashflow.start)}, через 30 дней ${rub(D.cashflow.end)}`, D.cashflow.gap ? `— разрыв ${D.cashflow.gap.date}: ${rub(D.cashflow.gap.amount)} (${D.cashflow.gap.reason})` : '— разрывов нет');
 console.log('Склад                 ', A.articles.map((a) => `${a.article}: ${a.days ?? '—'} дн.`).join(', '));
 console.log('Решения по правилам   ', rules.map((d) => `[${d.urgency}] ${d.title}`).join('\n                        '));
+console.log('С Яндекс Маркетом     ', `выручка ${rub(D2.kpi.revenue.value)}, прибыль ${rub(D2.kpi.profit.value)}`);
+console.log('ОПиУ, чистая прибыль  ', D2.opiu.columns.map((c, i) => `${c.label}${c.note ? ` (${c.note})` : ''}: ${rub(line(D2.opiu, 'net')[i])}`).join('; '));
+console.log('ДДС                   ', `начало ${rub(last(line(D2.dds, 'open')))}, поток ${rub(last(line(D2.dds, 'net')))}, конец ${rub(last(line(D2.dds, 'close')))}`);
 
 // Ждём отложенную запись базы и удаляем временную папку
 await new Promise((r) => setTimeout(r, 500));

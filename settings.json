@@ -12,6 +12,11 @@
   "cogsPercent": 38,
   "cogsByArticle": {},
   "fixedCostsMonthly": 450000,
+  "fixedCostsBreakdown": [
+    { "name": "Аренда мастерской", "amount": 180000 },
+    { "name": "Зарплата офиса и склада", "amount": 220000 },
+    { "name": "Сервисы, связь, бухгалтерия", "amount": 50000 }
+  ],
   "payments": [
     { "name": "Зарплата", "day": 10, "amount": 820000, "kind": "salary" },
     { "name": "Аванс по зарплате", "day": 25, "amount": 350000, "kind": "salary" },
@@ -20,6 +25,18 @@
     { "name": "УСН — авансовый платёж", "day": 28, "amount": 210000, "kind": "tax", "months": [1, 4, 7, 10] }
   ],
   "taxRate": 6,
+  "taxpayer": {
+    "kind": "ИП",
+    "name": "Иванов Алексей Петрович",
+    "inn": "",
+    "kpp": "",
+    "oktmo": "",
+    "ifns": "",
+    "phone": "",
+    "taxObject": "income",
+    "hasEmployees": true
+  },
+  "taxHistory": {},
   "maxDrr": 15,
   "reorderDays": 14,
   "minCashReserve": 0,
