@@ -1,5 +1,5 @@
 {
-  "companyName": "Северный Кот",
+  "companyName": "Атега",
   "ownerName": "Алексей",
   "team": [
     { "name": "Алексей", "role": "Владелец" },
@@ -13,7 +13,7 @@
   "cogsByArticle": {},
   "fixedCostsMonthly": 450000,
   "fixedCostsBreakdown": [
-    { "name": "Аренда мастерской", "amount": 180000 },
+    { "name": "Аренда склада в Москве", "amount": 180000 },
     { "name": "Зарплата офиса и склада", "amount": 220000 },
     { "name": "Сервисы, связь, бухгалтерия", "amount": 50000 }
   ],

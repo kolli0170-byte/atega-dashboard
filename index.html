@@ -4,7 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BrandOS</title>
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
+<script>
+/* Тема до отрисовки страницы: иначе тёмный кадр мигнёт у тех, кто выбрал светлую.
+   Как выключатель у двери — щёлкаем его до того, как заходим в комнату. */
+(function () {
+  var theme = 'dark';
+  try {
+    var saved = JSON.parse(localStorage.getItem('bos_theme'));
+    if (saved === 'light' || saved === 'dark') theme = saved;
+    else if (window.matchMedia('(prefers-color-scheme: light)').matches) theme = 'light';
+  } catch (e) { /* нет хранилища — остаётся тёмная */ }
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,13 +28,18 @@
    Все цвета, отступы и размеры — переменные. Аналогия: это палитра
    художника. Меняем краску в одном месте — меняется вся картина.
    ===================================================================== */
-:root {
-  /* Цвета: тёмная тема с неоновыми акцентами (синий / фиолетовый) */
+/* Тёмная — по умолчанию. Светлая переопределяет те же имена переменных:
+   компоненты не знают, какая тема включена, они берут «краску из банки». */
+:root, [data-theme="dark"] {
   --bg: #0A0C1C;          /* фон приложения */
   --s1: #13162E;          /* карточки, уровень 1 */
   --s2: #1A1E3D;          /* поля ввода, наведение, уровень 2 */
   --s3: #222749;          /* всплывающие окна, уровень 3 */
   --line: #2A2F57;        /* линии и рамки */
+  --line-strong: #3A4074; /* более заметная линия: итоги отчёта, наведение кнопки */
+  --total-bg: #182045;    /* фон строки «итого» */
+  --topbar: rgba(10,12,28,.96);
+  --drop: #161B3A;        /* колонка, над которой тащат карточку */
   --text: #ECEEFB;        /* основной текст */
   --muted: #A3A9D1;       /* второстепенный текст (контраст > 7:1 на --s1) */
   --faint: #8188B5;       /* подписи осей и мета (контраст > 4.5:1) */
@@ -45,6 +64,28 @@
   --sidebar-w: 240px;
   --hit: 44px;            /* минимальная зона касания (WCAG AA) */
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+/* Светлая тема: те же роли цветов, но краска светлая. Акценты темнее, чтобы читались на белом. */
+[data-theme="light"] {
+  --bg: #F3F5FB;
+  --s1: #FFFFFF;
+  --s2: #EEF2F8;
+  --s3: #E4E9F3;
+  --line: #D3D9E8;
+  --line-strong: #C3CADB;
+  --total-bg: #E7EDF8;
+  --topbar: rgba(255,255,255,.94);
+  --drop: #E3EBFA;
+  --text: #16182B;
+  --muted: #3E4668;
+  --faint: #5A6284;
+  --blue: #1F5BD8;
+  --violet: #6B46C1;
+  --green: #0C7A4E;
+  --red: #C42345;
+  --amber: #8A5A00;
+  --wb: #A10D88;
+  --ozon: #1F5BD8;
 }
 
 /* ===== Базовые стили ===== */
@@ -106,7 +147,7 @@ svg.ico { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: non
   font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap;
   transition: background-color .15s, border-color .15s;
 }
-.btn:hover { background: var(--s3); border-color: #3A4074; }
+.btn:hover { background: var(--s3); border-color: var(--line-strong); }
 .btn:disabled { opacity: .55; cursor: progress; }
 .btn--primary { background: var(--blue); border-color: var(--blue); color: #fff; }
 .btn--primary:hover { background: #3D7DF0; border-color: #3D7DF0; }
@@ -124,8 +165,13 @@ svg.ico { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: non
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap;
   padding: var(--sp-4) var(--sp-6);
-  background: rgba(10,12,28,.96); border-bottom: 1px solid var(--line);
+  background: var(--topbar); border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
 }
+/* Переключатель темы: две кнопки в одной «капсуле», как тумблер на два положения */
+.theme { display: inline-flex; padding: 2px; border: 1px solid var(--line); border-radius: 18px; background: var(--s2); }
+.theme__btn { min-height: 32px; padding: 0 10px; border: 0; border-radius: 16px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; }
+.theme__btn[aria-pressed="true"] { background: var(--s1); color: var(--text); box-shadow: 0 0 0 1px var(--line); }
 .topbar__burger { display: none; }
 .topbar__hello { min-width: 0; flex: none; }
 .topbar__hello h1 { font-size: 20px; font-weight: 600; line-height: 1.3; }
@@ -322,8 +368,8 @@ a.row:hover { text-decoration: none; background: var(--s2); }
 .report tbody tr:hover > * { background: var(--s2); }
 .report__note { display: block; font-size: 12px; font-weight: 400; color: var(--faint); }
 .report .r--head > * { font-weight: 600; }
-.report .r--sub > * { font-weight: 600; border-top: 1px solid #3A4074; }
-.report tr.r--total > * { font-weight: 700; background: #182045; }
+.report .r--sub > * { font-weight: 600; border-top: 1px solid var(--line-strong); }
+.report tr.r--total > * { font-weight: 700; background: var(--total-bg); }
 .report .r--detail > * { color: var(--muted); font-size: 13px; padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
 .report .r--detail > :first-child { padding-left: var(--sp-8); }
 .report .r--pct > * { color: var(--muted); font-size: 13px; }
@@ -379,7 +425,9 @@ a.row:hover { text-decoration: none; background: var(--s2); }
 .counters { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--sp-4); }
 .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 1fr); gap: var(--sp-4); overflow-x: auto; padding-bottom: var(--sp-2); align-items: start; }
 .board__col { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); min-height: 200px; transition: border-color .15s, background-color .15s; }
-.board__col--over { border-color: var(--blue); background: #161B3A; }
+.board__col--over { border-color: var(--blue); background: var(--drop); }
+.channel--total { font-weight: 600; border-top: 1px solid var(--line); margin-top: var(--sp-2); padding-top: var(--sp-2); }
+.fbo { margin-top: var(--sp-6); }
 .board__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); padding: var(--sp-1) var(--sp-1) var(--sp-2); }
 .board__title { font-weight: 600; font-size: 15px; }
 .board__meta { font-size: 13px; color: var(--muted); text-align: right; }
@@ -565,7 +613,7 @@ a.row:hover { text-decoration: none; background: var(--s2); }
       <div class="sidebar__mark" aria-hidden="true">B</div>
       <div>
         <div class="sidebar__name">BrandOS</div>
-        <div class="sidebar__company" id="companyName">Северный Кот</div>
+        <div class="sidebar__company" id="companyName">Атега</div>
       </div>
     </div>
     <nav class="nav" id="nav"></nav>
@@ -594,6 +642,10 @@ a.row:hover { text-decoration: none; background: var(--s2); }
         <div class="search__results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
       </form>
       <div class="sources" id="sources" aria-label="Подключённые источники"></div>
+      <div class="theme" role="group" aria-label="Тема оформления">
+        <button class="theme__btn" type="button" data-action="theme" data-value="dark" aria-pressed="false">Тёмная</button>
+        <button class="theme__btn" type="button" data-action="theme" data-value="light" aria-pressed="false">Светлая</button>
+      </div>
       <div class="sync">
         <span class="sync__text" id="syncText">Демо-данные</span>
         <button class="btn btn--icon" type="button" data-action="sync" aria-label="Обновить данные" title="Обновить данные">
@@ -716,7 +768,7 @@ function buildDemoReports(daily, { cashNow, fixed, cogsPct, ads }) {
   for (const [k] of CH) total.byCh[k] = sum(cols, (c) => c.byCh[k]);
   const all = [...cols, total];
   const v = (f) => all.map(f);
-  const FIXED_ITEMS = [['Аренда мастерской', 180000], ['Зарплата офиса и склада', 220000], ['Сервисы, связь, бухгалтерия', 50000]];
+  const FIXED_ITEMS = [['Аренда склада в Москве', 180000], ['Зарплата офиса и склада', 220000], ['Сервисы, связь, бухгалтерия', 50000]];
   const opiu = {
     columns: [...months.map((m, i) => ({ key: `m${i}`, label: m.label, note: m.note })), { key: 'total', label: 'Итого', note: `${sum(months, (m) => m.days)} дн.` }],
     rows: [
@@ -875,10 +927,57 @@ const DDS_DEMO = [
   ['capex', 'Оборудование и основные средства', 'inv', 'out'], ['owner_out', 'Выплаты собственнику', 'fin', 'out']
 ];
 
+/* Кластеры FBO — регионы, куда маркетплейс сам развозит товар со своего склада.
+   Покупатель на Юге получает заказ со склада Юга. Пустой кластер — карточка проседает именно там,
+   даже если в Москве запас ещё есть. */
+const FBO_CLUSTERS = {
+  wb: [['cfo', 'Центральный', 'Коледино'], ['szfo', 'Северо-Запад', 'Санкт-Петербург'], ['pfo', 'Приволжье', 'Казань'], ['south', 'Юг', 'Краснодар'], ['ural', 'Урал', 'Екатеринбург']],
+  ozon: [['cfo', 'Москва и МО', 'Хоругвино'], ['szfo', 'Санкт-Петербург и СЗФО', 'Санкт-Петербург'], ['south', 'Юг', 'Ростов-на-Дону'], ['pfo', 'Поволжье', 'Казань'], ['ural', 'Урал', 'Екатеринбург']],
+  ym: [['cfo', 'Москва', 'Софьино'], ['szfo', 'Северо-Запад', 'Санкт-Петербург'], ['south', 'Юг', 'Ростов-на-Дону'], ['ural', 'Урал', 'Екатеринбург']]
+};
+// Доля спроса: Москва и центр продают больше, Дальний Восток в демо не берём — мало оборота
+const FBO_WEIGHT = {
+  wb: [0.40, 0.16, 0.15, 0.17, 0.12],
+  ozon: [0.38, 0.18, 0.16, 0.15, 0.13],
+  ym: [0.48, 0.20, 0.18, 0.14]
+};
+const FBO_COVER_DAYS = 45;
+
+function buildFbo(articles, reorderDays) {
+  const rows = [];
+  articles.forEach((a, idx) => {
+    const clusters = FBO_CLUSTERS[a.mp] || [];
+    const weights = FBO_WEIGHT[a.mp] || [];
+    // Коэффициент «полки»: у части кластеров запас нарочно тоньше спроса — оттуда и придёт рекомендация
+    const skew = clusters.map((_, j) => ((idx + j) % 5 === 0 ? 0.2 : (idx + j) % 4 === 1 ? 0.5 : 1));
+    const parts = weights.map((w, j) => w * skew[j]);
+    const partSum = sum(parts) || 1;
+    const qty = parts.map((p) => Math.round(a.stock * p / partSum));
+    qty[0] += a.stock - sum(qty);
+    clusters.forEach((c, j) => {
+      const perDay = +((a.perDay * weights[j]).toFixed(2));
+      const inWay = j === 0 ? (a.inWay || 0) : 0;
+      const have = Math.max(0, qty[j]);
+      const days = perDay > 0 ? Math.floor((have + inWay) / perDay) : null;
+      const raw = perDay > 0 ? Math.ceil(perDay * FBO_COVER_DAYS - have - inWay) : 0;
+      const low = days != null && days < reorderDays;
+      rows.push({
+        mp: a.mp, article: a.article, name: a.name,
+        cluster: c[0], clusterName: c[1], warehouse: c[2],
+        qty: have, inWay, perDay, days,
+        recommend: low && raw > 0 ? Math.ceil(raw / 5) * 5 : 0,
+        why: low ? `Хватит на ${days} дн. при ${perDay} шт/день. Порог — ${reorderDays} дн., закрываем ${FBO_COVER_DAYS} дней спроса.` : ''
+      });
+    });
+  });
+  return { reorderDays, coverDays: FBO_COVER_DAYS, rows, note: 'Пример: общий остаток артикула разложен по кластерам. В рабочих данных для этого нужны остатки по складам из кабинета маркетплейса.' };
+}
+
 /* =====================================================================
    ДЕМО-ДАННЫЕ — всё в одном объекте, чтобы потом подставить реальные.
    Даты строятся от «сегодня», поэтому демо всегда выглядит свежим.
-   Пример бизнеса: мастерская «Северный Кот» — мебель для животных.
+   Пример бизнеса: «Атега» — фурнитура для фургонов и запчасти автокондиционеров
+   (реальные артикулы с atega.ru, продаются на WB, Ozon и Яндекс Маркете).
    ===================================================================== */
 function buildDemo() {
   // Детерминированный генератор случайных чисел: при каждой загрузке одинаковые «случайности»
@@ -912,7 +1011,7 @@ function buildDemo() {
     { name: 'НДФЛ', kind: 'tax', date: addDays(9), amount: 120000 },
     { name: 'УСН — авансовый платёж', kind: 'tax', date: addDays(9), amount: 210000 },
     { name: 'Зарплата', kind: 'salary', date: addDays(24), amount: 820000 },
-    { name: 'Аренда мастерской', kind: 'other', date: addDays(27), amount: 180000 }
+    { name: 'Аренда склада в Москве', kind: 'other', date: addDays(27), amount: 180000 }
   ].map((p) => ({ ...p, daysLeft: daysBetween(p.date) }));
 
   // Прогноз денег: та же логика, что на сервере (приток − расход − платежи по графику)
@@ -933,36 +1032,42 @@ function buildDemo() {
     if (!gap && bal < 0) gap = { date, amount: Math.round(bal), reason: pays.map((p) => p.name).join(', ') };
   }
 
-  // Артикулы: [артикул, название, площадка, цена, продано за 28 дн, остаток, в пути, реклама ₽, тренд 7 дн %, доля к выплате]
-  const P = [
-    ['SK-101', 'Когтеточка-столбик 70 см', 'wb', 1890, 310, 640, 0, 21000, 8.2, 0.68],
-    ['SK-102', 'Домик для кошки «Изба»', 'wb', 4990, 142, 26, 0, 38000, 12.5, 0.7],
-    ['SK-103', 'Лежанка круглая 50 см', 'ozon', 1590, 260, 410, 40, 15500, -3.1, 0.66],
-    ['SK-104', 'Комплекс «Сосна» 120 см', 'wb', 8900, 58, 23, 0, 41000, 4.0, 0.72],
-    ['SK-105', 'Гамак настенный', 'ozon', 2490, 120, 380, 0, 9800, 1.2, 0.68],
-    ['SK-106', 'Когтеточка угловая', 'wb', 990, 420, 900, 120, 12500, -6.4, 0.6],
-    ['SK-107', 'Лежанка на батарею', 'ozon', 1290, 230, 25, 0, 8700, 18.0, 0.66],
-    ['SK-108', 'Домик-куб с лежанкой', 'wb', 3590, 96, 210, 0, 17200, -1.5, 0.69],
-    ['SK-109', 'Ступеньки для собак', 'ozon', 3290, 64, 150, 0, 22800, -9.8, 0.67],
-    ['SK-110', 'Тоннель шуршащий', 'wb', 1190, 150, 520, 0, 39500, -12.0, 0.56],
-    ['SK-111', 'Лежанка-корзина плетёная', 'ym', 2790, 96, 140, 0, 0, 6.3, 0.74],
-    ['SK-112', 'Когтеточка-доска настенная', 'ym', 890, 210, 48, 0, 0, 14.1, 0.71]
+  // Каталог «Атеги»: один и тот же артикул продаётся на всех трёх площадках.
+  // Цифры продаж — пример; названия и цены — с atega.ru.
+  // Строка: [артикул, название, цена ₽, площадка, продано за 28 дн, остаток, в пути, реклама ₽, тренд 7 дн %]
+  const CATALOG = [
+    ['З-301016У', 'Замок штанговый внутренний PUSH, труба 16 мм, цинк', 3360],
+    ['З-301017', 'Замок стержневой утапливаемый, 16 мм, цинк', 4180],
+    ['З-301091', 'Замок стержневой утапливаемый, 18 мм, цинк', 3650],
+    ['У-912469', 'Уплотнитель проёма дверей, 1 погонный метр', 199],
+    ['RC-U08173', 'Компрессор кондиционера 5S-10PA15, аналог Denso', 14800],
+    ['RC-U0847', 'Компрессор кондиционера 10PA17C, 8PK, 12В', 22520]
   ];
-  const articles = P.map(([article, name, mp, price, sold, stock, inWay, adSpend, trend7, pr]) => {
+  // Продажи различаются по площадкам: где-то товар заканчивается, где-то запас спокойный
+  const SALES = {
+    'З-301016У': { wb: [86, 210, 0, 14000, 6.2], ozon: [74, 22, 0, 9000, -4.1], ym: [31, 48, 10, 0, 3.4] },
+    'З-301017': { wb: [42, 160, 0, 8000, 2.1], ozon: [38, 140, 20, 6000, 1.4], ym: [16, 70, 0, 0, -1.2] },
+    'З-301091': { wb: [28, 18, 0, 5000, -8.4], ozon: [22, 90, 0, 4000, 4.6], ym: [11, 40, 0, 0, 2.0] },
+    'У-912469': { wb: [640, 1800, 200, 6000, 9.5], ozon: [510, 420, 0, 4500, 5.1], ym: [260, 30, 0, 0, 11.0] },
+    'RC-U08173': { wb: [9, 4, 0, 45000, -6.0], ozon: [7, 12, 0, 8000, 3.2], ym: [4, 8, 0, 0, 1.1] },
+    'RC-U0847': { wb: [6, 14, 0, 12000, 4.4], ozon: [5, 11, 2, 7000, -2.5], ym: [3, 6, 0, 0, 0.8] }
+  };
+  const articles = CATALOG.flatMap(([article, name, price]) => ['wb', 'ozon', 'ym'].map((mp) => {
+    const [sold, stock, inWay, adSpend, trend7] = SALES[article][mp];
     const rev = price * sold;
-    const prof = rev * pr - rev * cogsPct - adSpend;
+    const prof = rev * DEMO_PAY[mp] - rev * cogsPct - adSpend;
     const perDay = +(sold / 28).toFixed(2);
-    return { mp, article, name, revenue: rev, trend7, sold, stock, inWay, perDay, days: Math.floor(stock / perDay), adSpend, drr: +((adSpend / rev) * 100).toFixed(1), profit: Math.round(prof), margin: +((prof / rev) * 100).toFixed(1) };
-  });
+    return { mp, article, name, price, revenue: rev, trend7, sold, stock, inWay, perDay, days: perDay ? Math.floor(stock / perDay) : null, adSpend, drr: rev ? +((adSpend / rev) * 100).toFixed(1) : 0, profit: Math.round(prof), margin: rev ? +((prof / rev) * 100).toFixed(1) : 0 };
+  }));
 
   // Рекламные кампании
   const C = [
-    ['wb', '1001', 'Поиск — Домик «Изба»', 'идёт', 38000, 410000, 82, 9.1],
-    ['wb', '1002', 'Каталог — Тоннель шуршащий', 'идёт', 39500, 126000, 106, 33.0],
-    ['wb', '1003', 'Поиск — Комплекс «Сосна»', 'идёт', 41000, 380000, 43, 10.2],
-    ['ozon', '2001', 'Трафареты — Лежанки', 'идёт', 24200, 140000, 98, 18.4],
-    ['ozon', '2002', 'Поиск — Ступеньки для собак', 'идёт', 6800, 0, 0, null],
-    ['wb', '1004', 'Автокампания — Когтеточки', 'пауза', 33500, 365000, 290, 8.7]
+    ['wb', '1001', 'Поиск — замок PUSH 16 мм', 'идёт', 62000, 720000, 86, 8.4],
+    ['wb', '1002', 'Каталог — компрессор 5S-10PA15', 'идёт', 55000, 133000, 9, 38.2],
+    ['wb', '1003', 'Поиск — уплотнитель проёма', 'идёт', 35000, 420000, 640, 7.6],
+    ['ozon', '2001', 'Трафареты — замки фургонов', 'идёт', 19000, 310000, 112, 6.1],
+    ['ozon', '2002', 'Поиск — компрессор 10PA17C', 'идёт', 12000, 0, 0, null],
+    ['ym', '3001', 'Поиск — уплотнитель 1 м', 'идёт', 0, 52000, 260, 0]
   ];
   const campaigns = C.map(([mp, id, name, status, spend, ordersSum, orders, drr7]) => ({
     mp, id, name, status, spend, orders, ordersSum,
@@ -978,26 +1083,26 @@ function buildDemo() {
     { id: 'agree', name: 'Согласование' }, { id: 'won', name: 'Успешно', won: true }, { id: 'lost', name: 'Отказ', lost: true }
   ];
   const deals = [
-    ['Зоомагазин «Хвост» — опт когтеточек', 184000, 'new', 'Сайт', 'Марина', -2],
-    ['Ветклиника «Айболит» — лежанки', 96000, 'new', 'Telegram', 'Марина', -1],
-    ['Сеть «Четыре лапы» — пилотная партия', 620000, 'contact', 'Выставка', 'Алексей', -9],
-    ['Отель для животных «Мурлыка»', 142000, 'contact', 'Сайт', 'Марина', -6],
-    ['Груминг-салон «Пушистик»', 58000, 'offer', 'Рекомендация', 'Марина', -12],
-    ['Питомник мейн-кунов «Северная звезда»', 210000, 'offer', 'Instagram', 'Алексей', -15],
-    ['Маркетплейс «Яндекс Маркет» — FBS', 350000, 'agree', 'Входящий', 'Алексей', -20],
-    ['Кафе с котиками «Котокафе»', 76000, 'won', 'Сайт', 'Марина', -25],
-    ['Зоосалон «Лапки» — комплексы', 248000, 'won', 'Выставка', 'Марина', -32],
-    ['ИП Смирнова — лежанки под заказ', 34000, 'lost', 'Telegram', 'Марина', -18]
+    ['Кузовной цех «Фургон-Сервис» — замки PUSH', 184000, 'new', 'Сайт', 'Марина', -2],
+    ['Автосервис «Климат-Авто» — компрессоры', 96000, 'new', 'Telegram', 'Марина', -1],
+    ['ООО «Спецкузов» — пилотная партия фурнитуры', 620000, 'contact', 'Выставка', 'Алексей', -9],
+    ['СТО «Дверь-Фургон» — уплотнители', 142000, 'contact', 'Сайт', 'Марина', -6],
+    ['ИП Козлов — штанговые замки', 58000, 'offer', 'Рекомендация', 'Марина', -12],
+    ['Завод надстроек «Северная звезда»', 210000, 'offer', 'Сайт', 'Алексей', -15],
+    ['Дилер «Яндекс Маркет» — опт FBO', 350000, 'agree', 'Входящий', 'Алексей', -20],
+    ['Автомагазин «Деталь-Юг»', 76000, 'won', 'Сайт', 'Марина', -25],
+    ['Кузовное ателье «Борт» — замки и петли', 248000, 'won', 'Выставка', 'Марина', -32],
+    ['ИП Смирнова — уплотнители под заказ', 34000, 'lost', 'Telegram', 'Марина', -18]
   ].map(([c, s, st, src, mgr, d], i) => ({ id: `deal_demo${i}`, c, sum: s, st, src, mgr, d: addDays(d), closed: st === 'won' || st === 'lost' ? addDays(d + 6) : null }));
 
   const documents = [
-    ['Счёт №1842 ООО «ЛесТорг».pdf', 'Почта', 'ООО «ЛесТорг»', 'Счёт', 286000, addDays(3), false, true, 'Финансы', 'Ждёт подписи', 'Оплата фанеры и бруса для партии комплексов «Сосна».'],
-    ['УПД №5521 от ООО «ТКань-Опт».pdf', 'ЭДО', 'ООО «ТКань-Опт»', 'УПД', 94500, addDays(2), true, false, 'Поставки', 'Ждёт подписи', 'Поставка мебельной ткани, нужно подписать в Диадоке.'],
+    ['Счёт №1842 Hito — замки З-301016У.pdf', 'Почта', 'Hito', 'Счёт', 286000, addDays(3), false, true, 'Финансы', 'Ждёт подписи', 'Оплата партии штанговых замков PUSH, артикул З-301016У.'],
+    ['УПД №5521 уплотнители.pdf', 'ЭДО', 'ООО «Резинопласт»', 'УПД', 94500, addDays(2), true, false, 'Поставки', 'Ждёт подписи', 'Поставка уплотнителя У-912469, нужно подписать в Диадоке.'],
     ['Отчёт о реализации WB за неделю.pdf', 'WB', 'Wildberries', 'Отчёт', 612400, null, false, false, 'Маркетплейсы', 'Обработан', 'Еженедельный отчёт: к перечислению 612 400 ₽.'],
     ['Акт оказания услуг Ozon сентябрь.pdf', 'Ozon', 'Ozon', 'Акт', 148900, addDays(5), true, false, 'Маркетплейсы', 'Ждёт подписи', 'Акт по услугам логистики и хранения.'],
     ['Выписка Т-Банк.pdf', 'Банк', 'Т-Банк', 'Отчёт', null, null, false, false, 'Финансы', 'Обработан', 'Выписка по расчётному счёту за неделю.'],
     ['фото_счёта_картон.jpg', 'Telegram', 'Олег', 'Счёт', 42300, addDays(1), false, true, 'Поставки', 'Новый', 'Счёт на гофрокартон для упаковки, прислан фото.'],
-    ['Договор поставки «Четыре лапы».docx', 'Почта', 'ООО «Четыре лапы»', 'Договор', 620000, addDays(7), true, false, 'CRM', 'Новый', 'Проект договора пилотной поставки.'],
+    ['Договор поставки «Спецкузов».docx', 'Почта', 'ООО «Спецкузов»', 'Договор', 620000, addDays(7), true, false, 'CRM', 'Новый', 'Проект договора пилотной поставки фурнитуры.'],
     ['Требование ФНС.pdf', 'ЭДО', 'ИФНС №7', 'Письмо', null, addDays(10), false, false, 'Налоги', 'Новый', 'Запрос пояснений по декларации УСН.']
   ].map(([name, source, cp, type, amount, due, needSign, needPay, section, status, summary], i) => ({
     id: `d_demo${i}`, name, source, from: cp, date: new Date(Date.now() - i * 26 * 3600000).toISOString(), status,
@@ -1005,13 +1110,13 @@ function buildDemo() {
   }));
 
   const tasks = [
-    ['Оплатить счёт ООО «ЛесТорг» на 286 000 ₽', 'todo', 'high', addDays(3), 'Ирина', true, 'd_demo0'],
-    ['Подписать УПД от ООО «ТКань-Опт»', 'todo', 'medium', addDays(2), 'Алексей', true, 'd_demo1'],
-    ['Подготовить фото для карточки «Изба»', 'doing', 'medium', addDays(-1), 'Дмитрий', false, null],
+    ['Оплатить счёт Hito на 286 000 ₽ — замки PUSH', 'todo', 'high', addDays(3), 'Ирина', true, 'd_demo0'],
+    ['Подписать УПД на уплотнители', 'todo', 'medium', addDays(2), 'Алексей', true, 'd_demo1'],
+    ['Подготовить фото карточки «Замок PUSH»', 'doing', 'medium', addDays(-1), 'Дмитрий', false, null],
     ['Сверить остатки на складе Коледино', 'doing', 'high', addDays(0), 'Олег', false, null],
     ['Ответить на отзывы Ozon за неделю', 'todo', 'low', addDays(4), 'Марина', false, null],
-    ['Согласовать договор с «Четыре лапы»', 'todo', 'high', addDays(1), 'Алексей', true, 'd_demo6'],
-    ['Запустить акцию «Осенние лежанки»', 'done', 'medium', addDays(-3), 'Дмитрий', false, null],
+    ['Согласовать договор со «Спецкузов»', 'todo', 'high', addDays(1), 'Алексей', true, 'd_demo6'],
+    ['Запустить акцию «Уплотнители — метр»', 'done', 'medium', addDays(-3), 'Дмитрий', false, null],
     ['Заказать гофрокартон', 'done', 'low', addDays(-5), 'Олег', false, null]
   ].map(([title, status, priority, due, assignee, byAI, docId], i) => ({ id: `t_demo${i}`, title, status, priority, due, assignee, byAI, docId, createdAt: new Date(Date.now() - i * 86400000).toISOString() }));
 
@@ -1023,13 +1128,13 @@ function buildDemo() {
     situation: `По прогнозу ${dmy(gap.date)} на счетах будет ${rub(gap.amount)}. Причина: ${gap.reason}. Сейчас на счетах ${rub(cashNow)}.`,
     action: 'Перенести часть платежа поставщику и ускорить выплату с Wildberries.',
     why: 'Кассовый разрыв — это просроченные налоги и зарплата.',
-    steps: ['Договориться с ООО «ЛесТорг» о переносе оплаты на 10 дней', 'Проверить ближайшую выплату WB и Ozon', 'Сократить закупку медленных артикулов SK-106', 'Пересчитать прогноз денег'],
+    steps: ['Договориться с Hito о переносе оплаты замков на 10 дней', 'Проверить ближайшую выплату WB, Ozon и Маркета', 'Сократить закупку медленного арт. З-301091', 'Пересчитать прогноз денег'],
     effect: Math.abs(gap.amount), due: addDays(1), confidence: 75, metric: 'Минимальный остаток в прогнозе на 30 дней ≥ 0 ₽', taskIds: []
   });
   for (const a of articles.filter((x) => x.days < 14)) {
     const need = Math.max(10, Math.ceil((a.perDay * 45 - a.stock - a.inWay) / 10) * 10);
     decisions.push({
-      id: `dec_demo_${a.article}`, key: `stock:${a.mp}:${a.article}`, area: 'склад', status: 'new', source: 'rules',
+      id: `dec_demo_${a.mp}_${a.article}`, key: `stock:${a.mp}:${a.article}`, area: 'склад', status: 'new', source: 'rules',
       urgency: a.days < 5 ? 'критично' : a.days < 10 ? 'сегодня' : 'на неделе',
       title: `Дозаказать арт. ${a.article} — ${need} шт`,
       situation: `${mpFull(a.mp)}: остаток ${a.stock} шт, продаётся ${a.perDay} шт/день — хватит на ${a.days} дн. Порог — 14 дн.`,
@@ -1056,7 +1161,7 @@ function buildDemo() {
     });
   }
   for (const a of articles.filter((x) => x.profit < 0)) decisions.push({
-    id: `dec_demo_price${a.article}`, key: `price:${a.mp}:${a.article}`, area: 'цены', urgency: 'на неделе', status: 'new', source: 'rules',
+    id: `dec_demo_price_${a.mp}_${a.article}`, key: `price:${a.mp}:${a.article}`, area: 'цены', urgency: 'на неделе', status: 'new', source: 'rules',
     title: `Вывести арт. ${a.article} из минуса`,
     situation: `За 28 дней выручка ${rub(a.revenue)}, прибыль ${rub(a.profit)} (маржа ${a.margin}%). Реклама на артикул ${rub(a.adSpend)}, ДРР ${a.drr}%.`,
     action: 'Сократить рекламу на артикул и поднять цену на 5–10%.',
@@ -1066,12 +1171,20 @@ function buildDemo() {
   });
   decisions.push({
     id: 'dec_demo_old', key: 'ads:wb:0999', area: 'реклама', urgency: 'на неделе', status: 'rejected', source: 'rules', rejectReason: 'Кампания нужна для запуска новинки, держим месяц',
-    title: 'Остановить кампанию «Новинки — Гамаки»', situation: 'ДРР 24% при пороге 15%.', action: 'Поставить на паузу.', why: 'Расход выше порога.', steps: ['Пауза', 'Проверка через неделю'],
+    title: 'Остановить кампанию «Новинки — компрессоры»', situation: 'ДРР 24% при пороге 15%.', action: 'Поставить на паузу.', why: 'Расход выше порога.', steps: ['Пауза', 'Проверка через неделю'],
     effect: 12000, due: addDays(-2), confidence: 60, metric: 'ДРР ≤ 15%', taskIds: []
   });
 
+  // Отчёты считаем до сборки объекта: рентабельность каналов берётся из той же строки P&L
+  const reports = buildDemoReports(daily, { cashNow, fixed, cogsPct, ads: { wb: 152000, ozon: 31000, ym: 0 } });
+  const marginOf = (key) => {
+    const i = reports.pnl.columns.findIndex((c) => c.key === key);
+    return i < 0 ? 0 : reports.pnl.rows.find((r) => r.key === 'margin').values[i];
+  };
+  const stockOf = (mp) => sum(articles.filter((a) => a.mp === mp), (a) => a.stock);
+
   return {
-    company: 'Северный Кот', owner: 'Алексей',
+    company: 'Атега', owner: 'Алексей',
     team: [{ name: 'Алексей', role: 'Владелец' }, { name: 'Марина', role: 'Менеджер' }, { name: 'Олег', role: 'Склад' }, { name: 'Ирина', role: 'Бухгалтер' }, { name: 'Дмитрий', role: 'Маркетолог' }],
     sources: { wb: true, ozon: true, ym: true, bank: true, crm: true },
     lastSync: null, demo: [], estimated: [],
@@ -1084,13 +1197,13 @@ function buildDemo() {
     plan: (() => { const now = new Date(); const day = now.getDate(); const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); const fact = sum(daily.slice(-day), dayRev); return { plan: 4000000, fact, day, days, forecast: Math.round((fact / day) * days), pct: +((fact / 4000000) * 100).toFixed(1) }; })(),
     cashflow: { days: cf, gap, start: cashNow, end: Math.round(bal), inflow, outflow, minCash: 0 },
     channels: [
-      { key: 'wb', name: 'Wildberries', revenue: sum(daily, (d) => d.wb), margin: 14.2, drr: 6.8 },
-      { key: 'ozon', name: 'Ozon', revenue: sum(daily, (d) => d.ozon), margin: 11.5, drr: 8.9 },
-      { key: 'ym', name: 'Яндекс Маркет', revenue: sum(daily, (d) => d.ym), margin: 19.8, drr: 0 },
+      { key: 'wb', name: 'Wildberries', revenue: sum(daily, (d) => d.wb), margin: marginOf('wb'), drr: 6.8 },
+      { key: 'ozon', name: 'Ozon', revenue: sum(daily, (d) => d.ozon), margin: marginOf('ozon'), drr: 8.9 },
+      { key: 'ym', name: 'Яндекс Маркет', revenue: sum(daily, (d) => d.ym), margin: marginOf('ym'), drr: 0 },
       { key: 'site', name: 'Сайт', revenue: 312000, margin: 24.0, drr: 3.1 }
     ],
     payments,
-    receivables: { total: 1201300, items: [{ name: 'Wildberries', amount: 612400, note: 'выплата за текущую неделю' }, { name: 'Ozon', amount: 389600, note: 'за текущий расчётный период' }, { name: 'Яндекс Маркет', amount: 117300, note: 'по графику выплат Маркета' }, { name: 'Сеть «Четыре лапы»', amount: 82000, note: 'постоплата по счёту №118' }] },
+    receivables: { total: 1201300, items: [{ name: 'Wildberries', amount: 612400, note: 'выплата за текущую неделю' }, { name: 'Ozon', amount: 389600, note: 'за текущий расчётный период' }, { name: 'Яндекс Маркет', amount: 117300, note: 'по графику выплат Маркета' }, { name: 'ООО «Спецкузов»', amount: 82000, note: 'постоплата по счёту №118' }] },
     sales: {
       today: dayRev(daily[29]), yesterday: dayRev(daily[28]),
       week: sum(daily.slice(-7), dayRev), weekPrev: sum(daily.slice(-14, -7), dayRev),
@@ -1108,10 +1221,10 @@ function buildDemo() {
     ads: { spend: ads, ordersSum: sum(campaigns, (c) => c.ordersSum), drr: +((ads / revenue) * 100).toFixed(1), maxDrr: 15, campaigns },
     traffic: { sources: [{ name: 'VK Реклама', visits: 4820, orders: 96 }, { name: 'Telegram-каналы', visits: 2310, orders: 71 }, { name: 'Блогеры', visits: 3650, orders: 58 }, { name: 'Яндекс Директ', visits: 1980, orders: 33 }] },
     marketplaces: {
-      wb: { connected: true, revenue: sum(daily, (d) => d.wb), revenuePrev: Math.round(sum(daily, (d) => d.wb) / 1.12), payout: Math.round(sum(daily, (d) => d.wb) * DEMO_PAY.wb), ads: 152000, drr: 6.8, stockQty: 2319, skus: 6, returns: 61 },
-      ozon: { connected: true, revenue: sum(daily, (d) => d.ozon), revenuePrev: Math.round(sum(daily, (d) => d.ozon) / 1.11), payout: Math.round(sum(daily, (d) => d.ozon) * DEMO_PAY.ozon), ads: 31000, drr: 8.9, stockQty: 965, skus: 4, returns: null,
+      wb: { connected: true, revenue: sum(daily, (d) => d.wb), revenuePrev: Math.round(sum(daily, (d) => d.wb) / 1.12), payout: Math.round(sum(daily, (d) => d.wb) * DEMO_PAY.wb), ads: 152000, drr: 6.8, stockQty: stockOf('wb'), skus: 6, returns: 61 },
+      ozon: { connected: true, revenue: sum(daily, (d) => d.ozon), revenuePrev: Math.round(sum(daily, (d) => d.ozon) / 1.11), payout: Math.round(sum(daily, (d) => d.ozon) * DEMO_PAY.ozon), ads: 31000, drr: 8.9, stockQty: stockOf('ozon'), skus: 6, returns: null,
         finance: { accruals: Math.round(sum(daily, (d) => d.ozon) * 0.98), commission: -Math.round(sum(daily, (d) => d.ozon) * 0.19), logistics: -Math.round(sum(daily, (d) => d.ozon) * 0.1), refunds: -Math.round(sum(daily, (d) => d.ozon) * 0.02), services: -Math.round(sum(daily, (d) => d.ozon) * 0.01), compensation: 4200, others: 0 } },
-      ym: { connected: true, revenue: sum(daily, (d) => d.ym), revenuePrev: Math.round(sum(daily, (d) => d.ym) / 1.09), payout: Math.round(sum(daily, (d) => d.ym) * DEMO_PAY.ym), ads: 0, drr: 0, stockQty: 188, skus: 2, returns: 9 }
+      ym: { connected: true, revenue: sum(daily, (d) => d.ym), revenuePrev: Math.round(sum(daily, (d) => d.ym) / 1.09), payout: Math.round(sum(daily, (d) => d.ym) * DEMO_PAY.ym), ads: 0, drr: 0, stockQty: stockOf('ym'), skus: 6, returns: 9 }
     },
     finance: { revenue, mpCosts: Math.round(revenue - payout), payout: Math.round(payout), cogs: Math.round(revenue * cogsPct), fixed, ads, profit: Math.round(profit), margin: +margin.toFixed(1) },
     bank: {
@@ -1119,16 +1232,17 @@ function buildDemo() {
       accounts: [{ bank: 'Т-Банк', name: 'Основной счёт …4417', balance: 412000 }, { bank: 'Точка', name: 'Точка …0921', balance: 148000 }],
       ops: [
         [0, 612400, 'ООО «Вайлдберриз»', 'Перечисление по отчёту о реализации'],
-        [-1, -96000, 'ООО «ТКань-Опт»', 'Оплата по счёту 5521 за ткань'],
+        [-1, -96000, 'ООО «Резинопласт»', 'Оплата по счёту 5521 за уплотнители'],
         [-2, -38000, 'ООО «Вайлдберриз»', 'Пополнение рекламного кабинета'],
         [-3, 389600, 'ООО «Интернет Решения»', 'Выплата Ozon за период'],
-        [-4, -180000, 'ИП Кузнецов', 'Аренда мастерской за октябрь'],
-        [-5, -42300, 'ООО «Гофра»', 'Гофрокартон для упаковки'],
+        [-4, -180000, 'ИП Кузнецов', 'Аренда склада в Москве за октябрь'],
+        [-5, -42300, 'ООО «Гофра»', 'Гофрокороб для компрессоров'],
         [-7, 82000, 'ООО «Хвост»', 'Оплата по счёту 117']
       ].map(([d, amount, party, purpose]) => ({ date: addDays(d), amount, party, purpose, bank: 'Т-Банк' }))
     },
     settings: { maxDrr: 15, reorderDays: 14, revenuePlan: 4000000, cogsPercent: 38, fixedCostsMonthly: fixed, decisionHour: 8, syncMinutes: 30, taxRate: 6, taxObject: 'income' },
-    ...buildDemoReports(daily, { cashNow, fixed, cogsPct, ads: { wb: 152000, ozon: 31000, ym: 0 } }),
+    ...reports,
+    fbo: buildFbo(articles, 14),
     crm: { provider: 'demo', stages: STAGES, deals },
     tasks, documents, decisions,
     analytics: { articles, campaigns, maxDrr: 15 },
@@ -1175,7 +1289,7 @@ const state = {
   tasks: [], crm: null, documents: [], decisions: [], decMeta: {}, analytics: DEMO.analytics, integrations: [],
   ai: false,
   chat: [],
-  filters: { docSource: 'Все', docStatus: 'Все', taskAssignee: 'Все', taskPriority: 'Все', taskAI: false, decTab: 'new', articleQuery: '', repTab: 'opiu', rnpCh: 'all', rnpDays: 14 },
+  filters: { docSource: 'Все', docStatus: 'Все', taskAssignee: 'Все', taskPriority: 'Все', taskAI: false, decTab: 'new', articleQuery: '', repTab: 'opiu', rnpCh: 'all', rnpDays: 14, fboMp: 'all' },
   sort: { articles: { key: 'revenue', dir: -1 }, campaigns: { key: 'spend', dir: -1 } },
   introDone: false
 };
@@ -1619,20 +1733,36 @@ function planCard() {
   </a>`;
 }
 
+/* Рентабельность из P&L: чистая прибыль ÷ выручка. Та же цифра, что строка «Рентабельность» в отчёте,
+   поэтому главная и «ОПиУ» не спорят друг с другом. */
+function storeProfit() {
+  const pnl = state.data.pnl;
+  if (!pnl?.rows) return [];
+  const margin = pnl.rows.find((r) => r.key === 'margin')?.values || [];
+  const net = pnl.rows.find((r) => r.key === 'net')?.values || [];
+  const revenue = pnl.rows.find((r) => r.key === 'revenue')?.values || [];
+  return pnl.columns.map((c, i) => ({ key: c.key, label: c.key === 'total' ? 'Все магазины' : c.label, margin: margin[i], net: net[i], revenue: revenue[i] }));
+}
 function channelsCard() {
-  const ch = state.data.channels;
-  const maxM = Math.max(30, ...ch.map((c) => c.margin));
+  const stores = storeProfit();
+  const byKey = Object.fromEntries(stores.map((s) => [s.key, s]));
+  const ch = state.data.channels.map((c) => ({ ...c, margin: byKey[c.key]?.margin ?? c.margin }));
+  const total = byKey.total;
+  const maxM = Math.max(30, ...ch.map((c) => Math.abs(c.margin || 0)), Math.abs(total?.margin || 0));
+  const row = (name, margin, drr, extra = '') => `<div class="channel ${extra}">
+    <span>${esc(name)}</span>
+    <div class="bar"><div class="bar__fill ${margin < 0 ? 'bar__fill--red' : 'bar__fill--violet'}" style="width:${Math.max(2, (Math.abs(margin) / maxM) * 100)}%"></div></div>
+    <span class="num ${margin < 0 ? 'bad' : ''}">${pct(margin)}</span>
+    <span class="num ${drr > state.data.settings.maxDrr ? 'bad' : ''}">${drr == null ? '—' : pct(drr)}</span>
+  </div>`;
   return `<section class="card">
-    <div class="card__head"><h3 class="card__title">Маржинальность по каналам и ДРР ${tagFor('channels')}</h3><a class="card__more" href="#/marketplaces">Маркетплейсы</a></div>
+    <div class="card__head"><h3 class="card__title">Рентабельность магазинов и ДРР ${tagFor('pnl')}</h3><a class="card__more" href="#/reports">P&L по каналам</a></div>
     <div class="channels">
-      <div class="channel channel__head"><span>Канал</span><span aria-hidden="true"></span><span class="num">Маржа</span><span class="num">ДРР</span></div>
-      ${ch.map((c) => `<div class="channel">
-        <span>${esc(c.name)}</span>
-        <div class="bar"><div class="bar__fill ${c.margin < 0 ? 'bar__fill--red' : 'bar__fill--violet'}" style="width:${Math.max(2, (Math.abs(c.margin) / maxM) * 100)}%"></div></div>
-        <span class="num ${c.margin < 0 ? 'bad' : ''}">${pct(c.margin)}</span>
-        <span class="num ${c.drr > state.data.settings.maxDrr ? 'bad' : ''}">${pct(c.drr)}</span>
-      </div>`).join('') || '<p class="card__note">Нет подключённых каналов продаж.</p>'}
+      <div class="channel channel__head"><span>Магазин</span><span aria-hidden="true"></span><span class="num">Рентабельность</span><span class="num">ДРР</span></div>
+      ${ch.filter((c) => c.key !== 'site').map((c) => row(c.name, c.margin, c.drr)).join('')}
+      ${total ? row('Все магазины', total.margin, state.data.ads.drr, 'channel--total') : ''}
     </div>
+    <p class="card__note">Рентабельность — чистая прибыль ÷ выручка за 30 дней, как в P&L. «Все магазины» — WB, Ozon и Яндекс Маркет вместе.</p>
   </section>`;
 }
 
@@ -1925,20 +2055,26 @@ function pageMarketplaces() {
     if (!m) return '';
     const f = m.finance;
     const meta = INTEG_META[key];
+    const profit = storeProfit().find((s) => s.key === key);
     return `<section class="card">
       <div class="integ__top" style="margin-bottom:16px"><div class="logo" style="background:${meta.bg};${meta.fg ? `color:${meta.fg}` : ''}">${meta.lg}</div><div><h3 class="card__title">${mpFull(key)}</h3><div class="card__note">${state.mode === 'live' && !m.connected ? 'не подключён — пример' : '30 дней'}</div></div></div>
       <div class="stats">
         <div class="stat"><span class="stat__val">${short(m.revenue)}</span><span class="stat__label">${delta(m.revenuePrev ? ((m.revenue - m.revenuePrev) / m.revenuePrev) * 100 : null)}</span></div>
         <div class="stat"><span class="stat__val">${short(m.payout)}</span><span class="stat__label">к выплате</span></div>
         <div class="stat"><span class="stat__val">${short(m.ads)}</span><span class="stat__label">реклама, ДРР ${pct(m.drr)}</span></div>
+        <div class="stat"><span class="stat__val ${profit && profit.margin < 0 ? 'bad' : ''}">${profit ? pct(profit.margin) : '—'}</span><span class="stat__label">рентабельность${profit ? `, ${short(profit.net)}` : ''}</span></div>
         <div class="stat"><span class="stat__val">${nf.format(m.stockQty)} шт</span><span class="stat__label">на складах, ${m.skus} арт.</span></div>
       </div>
       ${f ? `<div class="rows" style="margin-top:16px">${[['Начислено за продажи', f.accruals], ['Комиссия', f.commission], ['Логистика и обработка', f.logistics], ['Возвраты и отмены', f.refunds], ['Услуги и продвижение', f.services], ['Компенсации', f.compensation]].map(([l, v]) => `<div class="row"><div class="row__main">${l}</div><div class="row__val ${v < 0 ? 'bad' : ''}">${rub(v)}</div></div>`).join('')}</div>` : ''}
       ${m.returns != null ? `<p class="card__note" style="margin-top:12px">Возвратов за 30 дней: ${m.returns}</p>` : ''}
     </section>`;
   };
+  const profits = storeProfit();
   return `${demoBanner()}
-  ${pageHead('Маркетплейсы', 'Wildberries, Ozon и Яндекс Маркет рядом: выручка, выплаты, реклама и склад за 30 дней.', `<a class="btn" href="#/reports">${icon('report')} P&L по каналам</a>`, tagFor('marketplaces'))}
+  ${pageHead('Маркетплейсы', 'Wildberries, Ozon и Яндекс Маркет рядом: выручка, выплаты, рентабельность и склад за 30 дней.', `<a class="btn" href="#/reports">${icon('report')} P&L по каналам</a>`, tagFor('marketplaces'))}
+  ${profits.length ? `<div class="stats stats--4">
+    ${profits.map((s) => `<div class="card stat"><span class="stat__val ${s.margin < 0 ? 'bad' : s.key === 'total' ? 'good' : ''}">${pct(s.margin)}</span><span class="stat__label">${esc(s.label)}, прибыль ${short(s.net)}</span></div>`).join('')}
+  </div>` : ''}
   <div class="cards">${['wb', 'ozon', 'ym'].map(block).join('')}</div>
   ${channelsCard()}`;
 }
@@ -2011,10 +2147,54 @@ function pageStock() {
 // ----- Поставки -----
 function pageSupplies() {
   const list = state.data.supplies;
+  const F = state.data.fbo;
+  const mp = state.filters.fboMp || 'all';
+  const chans = F ? [...new Set(F.rows.map((r) => r.mp))] : [];
+  const need = F ? F.rows.filter((r) => r.recommend > 0 && (mp === 'all' || r.mp === mp)) : [];
+  // Группируем как пачку коробок: одна поставка = один кластер одной площадки
+  const groups = [];
+  for (const r of need) {
+    const key = `${r.mp}|${r.cluster}`;
+    let g = groups.find((x) => x.key === key);
+    if (!g) { g = { key, mp: r.mp, clusterName: r.clusterName, warehouse: r.warehouse, items: [] }; groups.push(g); }
+    g.items.push(r);
+  }
+  groups.sort((a, b) => Math.min(...a.items.map((i) => i.days)) - Math.min(...b.items.map((i) => i.days)));
+  const plan = F ? `
+  <section class="card">
+    <div class="card__head"><h3 class="card__title">Планирование поставок FBO ${tagFor('supplies')}</h3><span class="card__note">порог ${F.reorderDays} дн., цель ${F.coverDays} дн.</span></div>
+    <p class="card__note report__about">FBO — товар лежит на складе маркетплейса и едет покупателю из ближайшего кластера. Ниже только те связки «артикул + кластер», где запаса меньше порога: куда везти, что именно и сколько.</p>
+    <div class="toolbar" role="group" aria-label="Площадка">
+      ${[['all', 'Все площадки'], ...chans.map((k) => [k, mpFull(k)])].map(([k, l]) => `<button class="chip ${mp === k ? 'chip--on' : ''}" type="button" data-action="fbo-mp" data-value="${k}" aria-pressed="${mp === k}">${l}</button>`).join('')}
+    </div>
+    <div class="stats stats--4">
+      <div class="card stat card--inner"><span class="stat__val ${need.length ? 'bad' : ''}">${need.length}</span><span class="stat__label">позиций к поставке</span></div>
+      <div class="card stat card--inner"><span class="stat__val">${nf.format(sum(need, (r) => r.recommend))} шт</span><span class="stat__label">рекомендовано отгрузить</span></div>
+      <div class="card stat card--inner"><span class="stat__val">${groups.length}</span><span class="stat__label">кластеров с дефицитом</span></div>
+      <div class="card stat card--inner"><span class="stat__val">${need.length ? `${Math.min(...need.map((r) => r.days))} дн.` : '—'}</span><span class="stat__label">самый короткий запас</span></div>
+    </div>
+    ${groups.map((g) => `<div class="fbo">
+      <div class="card__head"><h3 class="card__title">${mpFull(g.mp)} · ${esc(g.clusterName)}</h3>
+        <button class="btn btn--sm" type="button" data-action="task-new" data-title="Поставка FBO: ${mpFull(g.mp)}, ${esc(g.clusterName)}, склад ${esc(g.warehouse)}, ${sum(g.items, (i) => i.recommend)} шт">${icon('plus')} Задача на поставку</button>
+      </div>
+      <p class="card__note">Склад приёмки: ${esc(g.warehouse)}. В пачке ${g.items.length} арт., ${nf.format(sum(g.items, (i) => i.recommend))} шт.</p>
+      ${table([{ label: 'Артикул' }, { label: 'Остаток', num: true }, { label: 'В пути', num: true }, { label: 'В день', num: true }, { label: 'Хватит', num: true }, { label: 'Поставить', num: true }, { label: 'Почему' }],
+        g.items.sort((a, b) => a.days - b.days).map((r) => `<tr>
+          <td><b>${esc(r.article)}</b><div class="row__meta">${esc(r.name)}</div></td>
+          <td class="num">${nf.format(r.qty)}</td><td class="num">${nf.format(r.inWay)}</td><td class="num">${r.perDay}</td>
+          <td class="num bad">${r.days} дн.</td><td class="num">${nf.format(r.recommend)} шт</td><td class="wrap">${esc(r.why)}</td>
+        </tr>`))}
+    </div>`).join('') || '<p class="card__note">По выбранной площадке дефицита нет: везде запас дольше порога.</p>'}
+    <p class="card__note report__foot">${esc(F.note)}</p>
+  </section>` : '';
   return `${demoBanner()}
-  ${pageHead('Поставки', 'Поставки на склады маркетплейсов. API поставок пока не подключён — таблица показывает пример; создайте задачу, чтобы запланировать поставку.', `<button class="btn btn--primary" type="button" data-action="task-new" data-title="Создать поставку на склад">${icon('plus')} Запланировать поставку</button>`, tagFor('supplies'))}
-  ${table([{ label: 'Номер' }, { label: 'МП' }, { label: 'Склад' }, { label: 'Дата' }, { label: 'Штук', num: true }, { label: 'Статус' }],
-    list.map((x) => `<tr><td><b>${esc(x.id)}</b></td><td>${mpName(x.mp)}</td><td>${esc(x.warehouse)}</td><td>${dmy(x.date)}</td><td class="num">${nf.format(x.qty)}</td><td><span class="tag ${x.status === 'Принята' ? 'tag--green' : x.status === 'В пути' ? 'tag--blue' : ''}">${esc(x.status)}</span></td></tr>`))}`;
+  ${pageHead('Поставки', 'Сначала — куда не хватает товара на FBO, затем поставки, которые уже в пути.', `<button class="btn btn--primary" type="button" data-action="task-new" data-title="Создать поставку на склад">${icon('plus')} Запланировать поставку</button>`, tagFor('supplies'))}
+  ${plan}
+  <section>
+    <div class="card__head"><h3 class="card__title">Уже запланированные поставки</h3></div>
+    ${table([{ label: 'Номер' }, { label: 'МП' }, { label: 'Склад' }, { label: 'Дата' }, { label: 'Штук', num: true }, { label: 'Статус' }],
+      list.map((x) => `<tr><td><b>${esc(x.id)}</b></td><td>${mpName(x.mp)}</td><td>${esc(x.warehouse)}</td><td>${dmy(x.date)}</td><td class="num">${nf.format(x.qty)}</td><td><span class="tag ${x.status === 'Принята' ? 'tag--green' : x.status === 'В пути' ? 'tag--blue' : ''}">${esc(x.status)}</span></td></tr>`))}
+  </section>`;
 }
 
 // ----- Налоги -----
@@ -3088,6 +3268,8 @@ document.addEventListener('click', async (e) => {
     case 'rep-csv': return reportCsv(state.data[state.filters.repTab], { opiu: 'opiu', pnl: 'pnl-kanaly', dds: 'dds' }[state.filters.repTab]);
     case 'rnp-ch': state.filters.rnpCh = el.dataset.value; return render();
     case 'rnp-days': state.filters.rnpDays = Number(el.dataset.value); return render();
+    case 'fbo-mp': state.filters.fboMp = el.dataset.value; return render();
+    case 'theme': return applyTheme(el.dataset.value);
     case 'tax-doc': return openTaxDoc(el.dataset.kind);
     case 'dec-recompute': return recomputeDecisions(el);
     case 'dec-accept': el.disabled = true; try { await decide(id, 'accept'); toast('Решение принято: шаги добавлены в задачи'); } catch (err) { toast(err.message); el.disabled = false; } return;
@@ -3141,7 +3323,15 @@ window.addEventListener('hashchange', route);
    СТАРТ
    Пробуем сервер; если его нет (файл открыт напрямую) — демо-режим.
    ===================================================================== */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  LS.set('bos_theme', theme);
+  $$('[data-action="theme"]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === theme)));
+}
+
 (async function start() {
+  applyTheme(document.documentElement.dataset.theme || 'dark');
   state.chat = JSON.parse(sessionStorage.getItem('bos_chat') || '[]');
   if (location.protocol === 'file:') loadDemo();
   else {
