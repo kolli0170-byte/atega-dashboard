@@ -67,12 +67,12 @@
 
 ## Деплой на Railway
 
-Проект уже привязан к Railway (проект `brandos-severny-kot`, сервис `brandos`, постоянный диск `/data` для `db.json`).
+Проект уже привязан к Railway (проект `atega-marketplaces`, сервис `brandos`, постоянный диск `/data` для `db.json`).
 
 ```bash
 npm install -g @railway/cli
 railway login
-railway link              # выбрать brandos-severny-kot → brandos (на новом компьютере)
+railway link              # выбрать atega-marketplaces → brandos (на новом компьютере)
 railway up --service brandos
 ```
 
