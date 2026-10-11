@@ -67,13 +67,13 @@
 
 ## Деплой на Railway
 
-Проект уже привязан к Railway (проект `atega-marketplaces`, сервис `brandos`, постоянный диск `/data` для `db.json`).
+Проект уже привязан к Railway (сервис `atega-marketplaces`, постоянный диск `/data` для `db.json`).
 
 ```bash
 npm install -g @railway/cli
 railway login
-railway link              # выбрать atega-marketplaces → brandos (на новом компьютере)
-railway up --service brandos
+railway link              # выбрать проект и сервис atega-marketplaces (на новом компьютере)
+railway up --service atega-marketplaces
 ```
 
 Секреты задаются на хостинге, не в коде:
